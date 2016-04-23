@@ -1,0 +1,9 @@
+{
+  "name": "node-lewitt-bots",
+  "main": "bot.js",
+  "dependencies" : {
+    "canvas" : "latest",
+    "underscore" : "latest",
+    "shuffle-array" : "latest"
+  }
+}
