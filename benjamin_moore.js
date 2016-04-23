@@ -1,19 +1,34 @@
-// TOOD
-// finish spiral
-// randomize order, orientation
-// srand
-// variable padding
+if (typeof module !== 'undefined' && module.exports) {
+  var _ = require('underscore');
+}
 
-var _ = require('underscore');
-var shuffle = require('shuffle-array');
 
-var Canvas = require('canvas')
-  , Image = Canvas.Image;
+module.exports = {
+  draw_everything: draw_everything
+};
 
-var fs = require('fs');
 
 function randInt (low, high) {
     return Math.floor(Math.random() * (high - low) + low);
+}
+
+function shuffle(array) {
+  var currentIndex = array.length, temporaryValue, randomIndex;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
 }
 
 function getRndColor() {
@@ -23,40 +38,7 @@ function getRndColor() {
     return 'rgb(' + r + ',' + g + ',' + b + ')';
 }
 
-var max_x = 1000;
-var max_y = 700;
-
-var canvas = new Canvas(max_x, max_y);
-var ctx = canvas.getContext('2d');
-ctx.antialias = 'none';
-
-// draw background
-ctx.fillStyle = '#e0e0e0'
-ctx.fillRect(0, 0, max_x, max_y);
-
-// pick number of lines
-var num_lines = randInt(5, 10) * 2;
-var num_bands = num_lines + 1
-
-var padding_ratio = 0.1 + 0.1*Math.random()
-var squares_per_row = 3
-var square_size = (max_x / squares_per_row) * (1 - padding_ratio)
-var padding_size = (max_x / squares_per_row) * padding_ratio
-
-// figure out line spacing
-// TODO: make this very clean integers the whole way
-var band_to_line_width_multiplier = randInt(2, 5);
-
-// draw lines
-/*
-(num_lines * line_width) + ((num_lines + 1) * band_width) = max_x
-(num_lines * line_width) + ((num_lines + 1) * (line_width*band_to_line_width_multiplier) = max_x
-num_lines*line_width + num_lines*line_width*band_to_line_width_multiplier + line_width*band_to_line_width_multiplier = max_x
-line_width(num_lines + num_lines*multiplier + multiplier) = max_x
-line_width = max_x / (num_lines + num_lines*multiplier + multiplier)
-*/
-
-function make_shape_helper(max_x, max_y, draw_cb) {
+function make_shape_helper(ctx, num_lines, band_to_line_width_multiplier, max_x, max_y, draw_cb) {
   // pick color
   // TODO: make these colors within reasonable bounds, complimentary, etc
   var bg_color = getRndColor();
@@ -77,12 +59,12 @@ function make_shape_helper(max_x, max_y, draw_cb) {
   ctx.rect(0, 0, max_x, max_y);
   ctx.stroke();
   ctx.clip();
-  draw_cb(max_x, max_y, line_width, band_width, bg_color, fg_color);
+  draw_cb(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines);
   ctx.restore();
 }
 
 
-function make_corners(max_x, max_y, line_width, band_width, bg_color, fg_color) {
+function make_corners(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.lineWidth = line_width;
   ctx.clip();
   _(num_lines).times(function(line_index) {
@@ -95,7 +77,7 @@ function make_corners(max_x, max_y, line_width, band_width, bg_color, fg_color) 
   })
 }
 
-function make_squares(max_x, max_y, line_width, band_width, bg_color, fg_color) {
+function make_squares(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.lineWidth = line_width;
   // num_lines must be even
   _(num_lines / 2).times(function(line_index) {
@@ -104,7 +86,7 @@ function make_squares(max_x, max_y, line_width, band_width, bg_color, fg_color) 
   })
 }
 
-function make_lines(max_x, max_y, line_width, band_width, bg_color, fg_color) {
+function make_lines(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.lineWidth = line_width;
   _(num_lines).times(function(line_index) {
     var offset = line_index*line_width + (line_index+1)*band_width + line_width / 2
@@ -116,7 +98,7 @@ function make_lines(max_x, max_y, line_width, band_width, bg_color, fg_color) {
   })
 }
 
-function make_slants(max_x, max_y, line_width, band_width, bg_color, fg_color) {
+function make_slants(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.lineWidth = line_width;
   _(num_lines * 3).times(function(line_index) {
     var offset = line_index*line_width + (line_index+1)*band_width + line_width / 2
@@ -127,9 +109,10 @@ function make_slants(max_x, max_y, line_width, band_width, bg_color, fg_color) {
   })
 }
 
-function make_cross(max_x, max_y, line_width, band_width, bg_color, fg_color) {
+function make_cross(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   var local_num_lines = num_lines + 1
   console.log(local_num_lines)
+  var band_to_line_width_multiplier = band_width / line_width;
   var line_width = max_x*1.0 / (local_num_lines + local_num_lines*band_to_line_width_multiplier + band_to_line_width_multiplier)
   var band_width = line_width * band_to_line_width_multiplier
 
@@ -177,10 +160,9 @@ function make_cross(max_x, max_y, line_width, band_width, bg_color, fg_color) {
   ctx.stroke();
 }
 
-function make_spiral(max_x, max_y, line_width, band_width, bg_color, fg_color) {
+function make_spiral(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.lineWidth = line_width;
   ctx.beginPath()
-  // ctx.moveTo(0, 0)
   _(num_lines / 2).times(function(line_index) {
     var offset = line_index*line_width + (line_index+1)*band_width + line_width / 2
     ctx.lineTo(offset, offset - band_width - line_width)
@@ -192,40 +174,69 @@ function make_spiral(max_x, max_y, line_width, band_width, bg_color, fg_color) {
   ctx.stroke();
 }
 
-var drawing_funcs = [
-  make_corners, make_squares, make_lines, 
-  make_slants, 
-  make_spiral,
-  make_cross
-]
+function draw_everything(canvas) {
+  var ctx = canvas.getContext('2d');
 
-shuffle(drawing_funcs)
+  var max_x = canvas.height;
+  var max_y = canvas.width;
 
-_(drawing_funcs.length).times(function(index) {
-  var y_offset = Math.floor(index / squares_per_row) * (max_x / squares_per_row)
-  var x_offset = index % squares_per_row* (max_x / squares_per_row)
+  ctx.antialias = 'none';
 
-  ctx.save()
+  // draw background
+  ctx.fillStyle = '#e0e0e0'
+  ctx.fillRect(0, 0, max_x, max_y);
 
-  console.log("moving to " + x_offset + ", " + y_offset)
-  ctx.translate(x_offset, y_offset)
-  ctx.translate(padding_size / 2, padding_size / 2)
+  // pick number of lines
+  var num_lines = randInt(5, 10) * 2;
+  var num_bands = num_lines + 1
 
-  // possibly spin it
-  ctx.translate(square_size/2, square_size/2)
-  ctx.rotate(Math.PI * (randInt(0, 3) / 2))
-  ctx.translate(-square_size/2, -square_size/2)
+  var padding_ratio = 0.1 + 0.1*Math.random()
+  var squares_per_row = 3
+  var rows = 2
+  var square_size = (max_x / squares_per_row) * (1 - padding_ratio)
+  var x_padding_size = (max_x / squares_per_row) * padding_ratio
 
-  make_shape_helper(square_size, square_size, drawing_funcs[index])
-  ctx.restore()
-})
+  // WRONG
+  var y_padding_size = (max_x / squares_per_row) * padding_ratio
 
+  // figure out line spacing
+  // TODO: make this very clean integers the whole way
+  var band_to_line_width_multiplier = randInt(2, 5);
 
+  // draw lines
+  /*
+  (num_lines * line_width) + ((num_lines + 1) * band_width) = max_x
+  (num_lines * line_width) + ((num_lines + 1) * (line_width*band_to_line_width_multiplier) = max_x
+  num_lines*line_width + num_lines*line_width*band_to_line_width_multiplier + line_width*band_to_line_width_multiplier = max_x
+  line_width(num_lines + num_lines*multiplier + multiplier) = max_x
+  line_width = max_x / (num_lines + num_lines*multiplier + multiplier)
+  */
 
+  var drawing_funcs = [
+    make_corners, make_squares, make_lines, 
+    make_slants, 
+    make_spiral,
+    make_cross
+  ]
 
-var out = fs.createWriteStream(__dirname + '/output.png')
-  , stream = canvas.createPNGStream();
+  shuffle(drawing_funcs)
 
-stream.on('data', function(chunk){
-  out.write(chunk);
-});
+  _(drawing_funcs.length).times(function(index) {
+    var y_offset = Math.floor(index / squares_per_row) * (max_x / squares_per_row)
+    var x_offset = index % squares_per_row* (max_x / squares_per_row)
+
+    ctx.save()
+
+    console.log("moving to " + x_offset + ", " + y_offset)
+    ctx.translate(x_offset, y_offset)
+    ctx.translate(x_padding_size / 2, y_padding_size / 2)
+
+    // possibly spin it
+    ctx.translate(square_size/2, square_size/2)
+    ctx.rotate(Math.PI * (randInt(0, 3) / 2))
+    ctx.translate(-square_size/2, -square_size/2)
+
+    make_shape_helper(ctx, num_lines, band_to_line_width_multiplier, square_size, square_size, drawing_funcs[index])
+    ctx.restore()
+  })
+}
