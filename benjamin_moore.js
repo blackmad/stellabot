@@ -56,6 +56,7 @@ function make_shape_helper(ctx, num_lines, band_to_line_width_multiplier, max_x,
   var band_width = line_width * band_to_line_width_multiplier
 
   ctx.save();
+  ctx.beginPath()
   ctx.rect(0, 0, max_x, max_y);
   ctx.stroke();
   ctx.clip();
@@ -99,6 +100,7 @@ function make_lines(ctx, max_x, max_y, line_width, band_width, bg_color, fg_colo
 }
 
 function make_slants(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
+  ctx.antialias = 'default';
   ctx.lineWidth = line_width;
   _(num_lines * 3).times(function(line_index) {
     var offset = line_index*line_width + (line_index+1)*band_width + line_width / 2
@@ -180,7 +182,7 @@ function draw_everything(canvas) {
   var max_x = canvas.height;
   var max_y = canvas.width;
 
-  ctx.antialias = 'none';
+  // ctx.antialias = 'none';
 
   // draw background
   ctx.fillStyle = '#e0e0e0'
