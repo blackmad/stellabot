@@ -1,5 +1,8 @@
 if (typeof module !== 'undefined' && module.exports) {
   var _ = require('underscore');
+  var isNode = true;
+} else {
+  var isNode = false;
 }
 
 
@@ -38,7 +41,7 @@ function getRndColor() {
     return 'rgb(' + r + ',' + g + ',' + b + ')';
 }
 
-function make_shape_helper(ctx, num_lines, band_to_line_width_multiplier, max_x, max_y, draw_cb) {
+function make_shape_helper(ctx, num_lines, num_lines_to_draw, band_to_line_width_multiplier, max_x, max_y, draw_cb) {
   // pick color
   // TODO: make these colors within reasonable bounds, complimentary, etc
   var bg_color = getRndColor();
@@ -59,7 +62,7 @@ function make_shape_helper(ctx, num_lines, band_to_line_width_multiplier, max_x,
   ctx.rect(0, 0, max_x, max_y);
   ctx.stroke();
   ctx.clip();
-  draw_cb(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines);
+  draw_cb(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines_to_draw);
   ctx.restore();
 }
 
@@ -80,7 +83,7 @@ function make_corners(ctx, max_x, max_y, line_width, band_width, bg_color, fg_co
 function make_squares(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.lineWidth = line_width;
   // num_lines must be even
-  _(num_lines / 2).times(function(line_index) {
+  _(Math.floor(num_lines / 2)).times(function(line_index) {
     var offset = line_index*line_width + (line_index+1)*band_width + line_width / 2
     ctx.strokeRect(offset, offset, max_x - 2*offset, max_y - 2*offset);
   })
@@ -118,7 +121,7 @@ function make_cross(ctx, max_x, max_y, line_width, band_width, bg_color, fg_colo
 
   ctx.lineWidth = line_width;
   function draw_quarter() {
-    _(num_lines / 2 ).times(function(line_index) {
+    _(Math.floor(num_lines / 2)).times(function(line_index) {
       line_index = num_lines - line_index
       var offset = line_index*line_width + (line_index+1)*band_width + line_width / 2
       ctx.beginPath()
@@ -163,7 +166,7 @@ function make_cross(ctx, max_x, max_y, line_width, band_width, bg_color, fg_colo
 function make_spiral(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.lineWidth = line_width;
   ctx.beginPath()
-  _(num_lines / 2).times(function(line_index) {
+  _(Math.floor(num_lines / 2)).times(function(line_index) {
     var offset = line_index*line_width + (line_index+1)*band_width + line_width / 2
     ctx.lineTo(offset, offset - band_width - line_width)
     ctx.lineTo(offset, max_y - offset)
@@ -221,22 +224,39 @@ function draw_everything(canvas) {
 
   shuffle(drawing_funcs)
 
-  _(drawing_funcs.length).times(function(index) {
-    var y_offset = Math.floor(index / squares_per_row) * (max_x / squares_per_row)
-    var x_offset = index % squares_per_row* (max_x / squares_per_row)
+  function do_draw(num_lines_to_draw) {
+    _(drawing_funcs.length).times(function(index) {
+      var y_offset = Math.floor(index / squares_per_row) * (max_x / squares_per_row)
+      var x_offset = index % squares_per_row* (max_x / squares_per_row)
 
-    ctx.save()
+      ctx.save()
 
-    console.log("moving to " + x_offset + ", " + y_offset)
-    ctx.translate(x_offset, y_offset)
-    ctx.translate(x_padding_size / 2, y_padding_size / 2)
+      console.log("moving to " + x_offset + ", " + y_offset)
+      ctx.translate(x_offset, y_offset)
+      ctx.translate(x_padding_size / 2, y_padding_size / 2)
 
-    // possibly spin it
-    ctx.translate(square_size/2, square_size/2)
-    ctx.rotate(Math.PI * (randInt(0, 3) / 2))
-    ctx.translate(-square_size/2, -square_size/2)
+      // possibly spin it
+      ctx.translate(square_size/2, square_size/2)
+      ctx.rotate(Math.PI * (randInt(0, 3) / 2))
+      ctx.translate(-square_size/2, -square_size/2)
 
-    make_shape_helper(ctx, num_lines, band_to_line_width_multiplier, square_size, square_size, drawing_funcs[index])
-    ctx.restore()
-  })
+      make_shape_helper(ctx, num_lines, num_lines_to_draw, band_to_line_width_multiplier, square_size, square_size, drawing_funcs[index])
+      ctx.restore()
+    })
+  }
+
+  var current_line = 1;
+  function do_draw_animate() {
+    ctx.save();
+    do_draw(current_line);
+    ctx.restore();
+    current_line += 1;
+    console.log(current_line);
+  }
+
+  if (!isNode) {
+    window.setInterval(do_draw_animate, 1000)
+  } else {
+    do_draw(num_lines)
+  }
 }
