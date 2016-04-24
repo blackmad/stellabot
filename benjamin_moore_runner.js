@@ -1,14 +1,9 @@
-
-var _ = require('underscore');
-var shuffle = require('shuffle-array');
-
-var Canvas = require('canvas')
-  , Image = Canvas.Image;
+var Canvas = require('canvas');
 
 var fs = require('fs');
 
-var max_x = 1000;
-var max_y = 600;
+var max_x = 600;
+var max_y = 400;
 var canvas = new Canvas(max_x, max_y);
 
 var benjamin_moore = require('./benjamin_moore');

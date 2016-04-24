@@ -179,8 +179,8 @@ function make_spiral(ctx, max_x, max_y, line_width, band_width, bg_color, fg_col
 function draw_everything(canvas) {
   var ctx = canvas.getContext('2d');
 
-  var max_x = canvas.height;
-  var max_y = canvas.width;
+  var max_x = canvas.width;
+  var max_y = canvas.height;
 
   // ctx.antialias = 'none';
 
