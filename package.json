@@ -3,6 +3,7 @@
   "main": "bot.js",
   "dependencies" : {
     "canvas" : "latest",
+    "twit" : "latest",
     "underscore" : "latest",
     "shuffle-array" : "latest"
   }
