@@ -5,12 +5,15 @@ var Canvas = require('canvas');
 
 var fs = require('fs');
 
+var argv = require('minimist')(process.argv.slice(2));
+console.dir(argv);
+
 var max_x = 1200;
 var max_y = 800;
 var canvas = new Canvas(max_x, max_y);
 
 var benjamin_moore = require('./benjamin_moore');
-benjamin_moore.draw_everything(canvas);
+benjamin_moore.draw_everything(canvas, argv['glitch'] || false);
 
 Math.seed = function(s) {
     return function() {

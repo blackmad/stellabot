@@ -2,11 +2,11 @@ if (typeof module !== 'undefined' && module.exports) {
   var _ = require('underscore');
 }
 
-
 module.exports = {
   draw_everything: draw_everything
 };
 
+var shouldGlitchAtAll = null;
 
 function randInt (low, high) {
     return Math.floor(Math.random() * (high - low) + low);
@@ -64,16 +64,31 @@ function make_shape_helper(ctx, num_lines, band_to_line_width_multiplier, max_x,
   ctx.restore();
 }
 
+function calculateOffset(line_index, line_width, band_width) {
+  var glitch = Math.random() < 0.6
+  if (shouldGlitchAtAll) { // && glitch) {
+    if (Math.random() < 0.5) {
+      return function() { return (line_index*line_width + (line_index+1)*band_width + line_width / 2) + Math.random()*50 }
+    } else {
+      var randOffset = (line_index*line_width + (line_index+1)*band_width + line_width / 2) + Math.random()*50;
+      return function() { return randOffset }
+    }
+  } else {
+    return function() { 
+      return line_index*line_width + (line_index+1)*band_width + line_width / 2
+    }
+  }
+}
 
 function make_corners(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.lineWidth = line_width;
   ctx.clip();
   _(num_lines).times(function(line_index) {
-    var offset = line_index*line_width + (line_index+1)*band_width + line_width / 2
+    var offset = calculateOffset(line_index, line_width, band_width)
     ctx.beginPath()
-    ctx.moveTo(offset, 0)
-    ctx.lineTo(offset, max_y - offset)
-    ctx.lineTo(max_x, max_y - offset);
+    ctx.moveTo(offset(), 0)
+    ctx.lineTo(offset(), max_y - offset())
+    ctx.lineTo(max_x, max_y - offset());
     ctx.stroke();
   })
 }
@@ -82,18 +97,18 @@ function make_squares(ctx, max_x, max_y, line_width, band_width, bg_color, fg_co
   ctx.lineWidth = line_width;
   // num_lines must be even
   _(num_lines / 2).times(function(line_index) {
-    var offset = line_index*line_width + (line_index+1)*band_width + line_width / 2
-    ctx.strokeRect(offset, offset, max_x - 2*offset, max_y - 2*offset);
+    var offset = calculateOffset(line_index, line_width, band_width)
+    ctx.strokeRect(offset(), offset(), max_x - 2*offset(), max_y - 2*offset());
   })
 }
 
 function make_lines(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.lineWidth = line_width;
   _(num_lines).times(function(line_index) {
-    var offset = line_index*line_width + (line_index+1)*band_width + line_width / 2
+    var offset = calculateOffset(line_index, line_width, band_width)
     ctx.beginPath()
-    ctx.moveTo(offset, 0)
-    ctx.lineTo(offset, max_y);
+    ctx.moveTo(offset(), 0)
+    ctx.lineTo(offset(), max_y);
     ctx.stroke();
 
   })
@@ -103,17 +118,16 @@ function make_slants(ctx, max_x, max_y, line_width, band_width, bg_color, fg_col
   ctx.antialias = 'default';
   ctx.lineWidth = line_width;
   _(num_lines * 3).times(function(line_index) {
-    var offset = line_index*line_width + (line_index+1)*band_width + line_width / 2
+    var offset = calculateOffset(line_index, line_width, band_width)
     ctx.beginPath()
-    ctx.moveTo(offset - 15, -15)
-    ctx.lineTo(0 - 15, offset - 15)
+    ctx.moveTo(offset() - 15, -15)
+    ctx.lineTo(0 - 15, offset() - 15)
     ctx.stroke();
   })
 }
 
 function make_cross(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   var local_num_lines = num_lines + 1
-  console.log(local_num_lines)
   var band_to_line_width_multiplier = band_width / line_width;
   var line_width = max_x*1.0 / (local_num_lines + local_num_lines*band_to_line_width_multiplier + band_to_line_width_multiplier)
   var band_width = line_width * band_to_line_width_multiplier
@@ -122,11 +136,11 @@ function make_cross(ctx, max_x, max_y, line_width, band_width, bg_color, fg_colo
   function draw_quarter() {
     _(num_lines / 2 ).times(function(line_index) {
       line_index = num_lines - line_index
-      var offset = line_index*line_width + (line_index+1)*band_width + line_width / 2
+      var offset = calculateOffset(line_index, line_width, band_width)
       ctx.beginPath()
-      ctx.moveTo(offset, 0)
-      ctx.lineTo(offset, max_y - offset)
-      ctx.lineTo(max_x, max_y - offset);
+      ctx.moveTo(offset(), 0)
+      ctx.lineTo(offset(), max_y - offset())
+      ctx.lineTo(max_x, max_y - offset());
       ctx.stroke();
     })
   }
@@ -166,17 +180,19 @@ function make_spiral(ctx, max_x, max_y, line_width, band_width, bg_color, fg_col
   ctx.lineWidth = line_width;
   ctx.beginPath()
   _(num_lines / 2).times(function(line_index) {
-    var offset = line_index*line_width + (line_index+1)*band_width + line_width / 2
-    ctx.lineTo(offset, offset - band_width - line_width)
-    ctx.lineTo(offset, max_y - offset)
-    ctx.lineTo(max_x - offset, max_y - offset);
-    ctx.lineTo(max_x - offset, offset);
-    ctx.lineTo(offset + band_width + line_width, offset)
+    var offset = calculateOffset(line_index, line_width, band_width)
+    ctx.lineTo(offset(), offset() - band_width - line_width)
+    ctx.lineTo(offset(), max_y - offset())
+    ctx.lineTo(max_x - offset(), max_y - offset());
+    ctx.lineTo(max_x - offset(), offset());
+    ctx.lineTo(offset() + band_width + line_width, offset())
   })
   ctx.stroke();
 }
 
-function draw_everything(canvas) {
+function draw_everything(canvas, alwaysGlitch) {
+  shouldGlitchAtAll = alwaysGlitch || Math.random() < 0.1;
+
   var ctx = canvas.getContext('2d');
 
   var max_x = canvas.width;
@@ -229,7 +245,6 @@ function draw_everything(canvas) {
 
     ctx.save()
 
-    console.log("moving to " + x_offset + ", " + y_offset)
     ctx.translate(x_offset, y_offset)
     ctx.translate(x_padding_size / 2, y_padding_size / 2)
 

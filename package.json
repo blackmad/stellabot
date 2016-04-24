@@ -5,6 +5,7 @@
     "canvas" : "latest",
     "twit" : "latest",
     "underscore" : "latest",
-    "shuffle-array" : "latest"
+    "shuffle-array" : "latest",
+    "minimist": "latest"
   }
 }
