@@ -6,6 +6,7 @@
     "twit" : "latest",
     "underscore" : "latest",
     "shuffle-array" : "latest",
-    "minimist": "latest"
+    "minimist": "latest",
+    "tinycolor2": "latest"
   }
 }
