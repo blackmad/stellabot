@@ -4,8 +4,9 @@ if (typeof module !== 'undefined' && module.exports) {
   var _ = require('underscore');
   var tinycolor = require("tinycolor2");
   module.exports = {
-    draw_everything: draw_everything
-  };
+    draw_everything: draw_everything,
+    title: 'Jasper\'s Dilemma'
+  }
 }
 
 function getRndColor() {
@@ -21,7 +22,7 @@ var colorIndex = null;
 function initColors() {
   // please remove this awful globals hack
   if (colors === null) {
-    colors = _.times(5, function() { return getRndColor(); })
+    colors = _.times(10, function() { return getRndColor(); })
   }
   if (colorIndex === null) {
     colorIndex = 0;
@@ -81,7 +82,7 @@ function draw_it(ctx, max_x, band_width, num_lines, line_width, padding) {
   make_trapezoid(ctx, max_x, band_width)
   rotate90(ctx, max_x)
 
-  _.times(Math.floor((max_x / band_width)/2) - 1, function(index) {
+  _.times(Math.floor((max_x / band_width)/2), function(index) {
    // _.times(1, function(index) {
     make_trapezoid(ctx, max_x, band_width)
     rotate90(ctx, max_x)
@@ -95,15 +96,15 @@ function draw_it(ctx, max_x, band_width, num_lines, line_width, padding) {
     rotate90(ctx, max_x)
   })
 
-  make_trapezoid(ctx, max_x, band_width)
-  rotate90(ctx, max_x)
-  max_x -= band_width
-  make_trapezoid(ctx, max_x, band_width / 2)
-  rotate90(ctx, max_x)
-  make_trapezoid(ctx, max_x, band_width / 2)
+  // make_trapezoid(ctx, max_x, band_width)
+  // rotate90(ctx, max_x)
+  // max_x -= band_width
+  // make_trapezoid(ctx, max_x, band_width / 2)
+  // rotate90(ctx, max_x)
+  // make_trapezoid(ctx, max_x, band_width / 2)
 }
 
-function draw_everything(canvas) {
+function draw_everything(canvas, forceGlitch) {
   var ctx = canvas.getContext('2d');
 
   var band_width = 40
@@ -114,10 +115,15 @@ function draw_everything(canvas) {
   var max_x = canvas.width / 2;
 
   ctx.save()
+  rotate90(ctx, canvas.height)
   draw_it(ctx, max_x, band_width, num_lines, line_width, padding);
   ctx.restore()
+
   ctx.translate(max_x, 0)
   colors = _.map(colors, function(c) { return tinycolor(c).greyscale().toHexString(); });
   console.log(colors)
+  ctx.save()
+  rotate90(ctx, canvas.height)
   draw_it(ctx, max_x, band_width, num_lines, line_width, padding);
+  ctx.restore
 }

@@ -3,7 +3,8 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 module.exports = {
-  draw_everything: draw_everything
+  draw_everything: draw_everything,
+  title: 'Benjamin Moore Series'
 };
 
 var shouldGlitchAtAll = null;
@@ -124,6 +125,10 @@ function make_slants(ctx, max_x, max_y, line_width, band_width, bg_color, fg_col
     ctx.lineTo(0 - 15, offset() - 15)
     ctx.stroke();
   })
+}
+
+function rotate90(ctx) {
+
 }
 
 function make_cross(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {

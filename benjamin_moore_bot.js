@@ -12,13 +12,18 @@ var max_x = 1200;
 var max_y = 800;
 var canvas = new Canvas(max_x, max_y);
 
-var benjamin_moore = require('./benjamin_moore');
-benjamin_moore.draw_everything(canvas, argv['glitch'] || false);
+var draw_modules = [
+  require('./benjamin_moore'),
+  require('./jaspers_dilemma'), 
+]
+
+var draw_module = _.sample(modules);
+draw_module.draw_everything(canvas, argv['glitch'] || false);
 
 Math.seed = function(s) {
-    return function() {
-        s = Math.sin(s) * 10000; return s - Math.floor(s);
-    };
+  return function() {
+    s = Math.sin(s) * 10000; return s - Math.floor(s);
+  };
 };
 
 var seed = new Date().getTime()
@@ -27,7 +32,7 @@ Math.random = Math.seed(seed)
 T.post('media/upload', { media_data: canvas.toBuffer().toString('base64') }, function (err, data, response) {
   var mediaIdStr = data.media_id_string
 
-  var params = { status: 'Benjamin Moore Series ' + seed, media_ids: [mediaIdStr] }
+  var params = { status: draw_module.title + ' ' + seed, media_ids: [mediaIdStr] }
 
   T.post('statuses/update', params, function (err, data, response) {
     console.log(data)
