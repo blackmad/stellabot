@@ -13,12 +13,10 @@ reload for new renders
 
 http://blackmad.github.io/stellabot/benjamin_moore.html
 
-
 http://blackmad.github.io/stellabot/jaspers_dilemma.html
-
-(this one seems to have a bug that only manifests in chrome, not in node)
 
 ## TODO
 ### Jasper's Dilemma
 - pick attractive color ordering
 - randomize line size / ratios
+- use more available space
