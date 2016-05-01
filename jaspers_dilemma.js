@@ -1,5 +1,13 @@
 // http://whitney.org/image_columns/0071/3484/frank-stella_jaspers-dilemma_1962_700.jpg?1446039574
 
+// brushes / textures
+// https://github.com/kangax/fabric.js
+// http://processingjs.org/
+// https://github.com/disjukr/croquis.js
+// http://www.tricedesigns.com/2012/01/04/sketching-with-html5-canvas-and-brush-images/
+// https://github.com/rhyolight/Harmony-Brushes
+// http://perfectionkills.com/exploring-canvas-drawing-techniques/
+
 if (typeof module !== 'undefined' && module.exports) {
   var _ = require('underscore');
   var tinycolor = require("tinycolor2");
@@ -22,7 +30,7 @@ var colorIndex = null;
 function initColors() {
   // please remove this awful globals hack
   if (colors === null) {
-    colors = _.times(10, function() { return getRndColor(); })
+    colors = _.times(7, function() { return getRndColor(); })
   }
   if (colorIndex === null) {
     colorIndex = 0;
@@ -32,23 +40,29 @@ function initColors() {
 function getNextColor() {
   initColors();
 
+  var c = colors[colorIndex % colors.length];
   colorIndex+=1;
+  return c;
+}
+
+function getNextColorNoAdvance() {
+  initColors();
+
   var c = colors[colorIndex % colors.length];
   return c;
 }
 
-function getCurrentColor() {
-  initColors();
-
-  return colors[colorIndex % colors.length];
-}
 
 function calculate_isosceles_height(base) {
   return (base/2)*Math.tan(Math.PI/4)
 }
 
 function rotate90(ctx, max_y) {
-  ctx.rotate(Math.PI / 2)
+  rotateDegrees(ctx, 90, max_y)
+}
+
+function rotateDegrees(ctx, degrees, max_y) {
+  ctx.rotate(degrees * (Math.PI/180))
   ctx.translate(0, -max_y)
 }
 
@@ -69,61 +83,50 @@ function make_trapezoid(ctx, length, height) {
   ctx.lineTo(length - padding, 0)
   ctx.closePath()
   ctx.fillStyle = getNextColor();
+
   ctx.fill()
   ctx.restore()
 }
 
-function draw_it(ctx, max_x, band_width, num_lines, line_width, padding) {
-  //ctx.fillStyle = getRndColor()
-  make_trapezoid(ctx, max_x, band_width)
-  ctx.fillStyle = getCurrentColor()
-  ctx.fillRect(0, 0, band_width , band_width - padding)
-  rotate90(ctx, max_x)
-  make_trapezoid(ctx, max_x, band_width)
-  rotate90(ctx, max_x)
+function draw_it(ctx, max_x, band_width, padding) {
+   ctx.fillStyle = getNextColorNoAdvance()
+   ctx.fillRect(0, 0, band_width , band_width - padding)
 
-  _.times(Math.floor((max_x / band_width)/2), function(index) {
-   // _.times(1, function(index) {
+  _.times(Math.floor(2*max_x / band_width) - 1, function(index) {
+    if (index > 2 && index % 2 == 1) {
+      max_x -= band_width
+    }
     make_trapezoid(ctx, max_x, band_width)
-    rotate90(ctx, max_x)
-    max_x -= band_width
-    make_trapezoid(ctx, max_x, band_width)
-    rotate90(ctx, max_x)
-    make_trapezoid(ctx, max_x, band_width)
-    rotate90(ctx, max_x)
-    make_trapezoid(ctx, max_x-band_width, band_width)
-    max_x -= band_width
     rotate90(ctx, max_x)
   })
 
-  // make_trapezoid(ctx, max_x, band_width)
-  // rotate90(ctx, max_x)
-  // max_x -= band_width
-  // make_trapezoid(ctx, max_x, band_width / 2)
-  // rotate90(ctx, max_x)
-  // make_trapezoid(ctx, max_x, band_width / 2)
+  max_x -= band_width
+  make_trapezoid(ctx, max_x, band_width / 2)
+  rotate90(ctx, max_x)
+  make_trapezoid(ctx, max_x, band_width / 2)
 }
 
 function draw_everything(canvas, forceGlitch) {
   var ctx = canvas.getContext('2d');
 
-  var band_width = 40
-  var num_lines = 20
-  var line_width = 6
+  var band_width = 25
   var padding = 5
 
-  var max_x = canvas.width / 2;
+  var max_x = Math.min(canvas.width, canvas.height) / 2;
+
+  ctx.translate((canvas.width - 2*max_x) / 2, (canvas.height - max_x) / 2)
 
   ctx.save()
-  rotate90(ctx, canvas.height)
-  draw_it(ctx, max_x, band_width, num_lines, line_width, padding);
+  rotateDegrees(ctx, 90, canvas.height/2)
+  draw_it(ctx, max_x, band_width, padding);
   ctx.restore()
 
   ctx.translate(max_x, 0)
+  rotate90(ctx, canvas.height/2)
+  ctx.scale(1, -1)
+  ctx.translate(0, -max_x)
   colors = _.map(colors, function(c) { return tinycolor(c).greyscale().toHexString(); });
-  console.log(colors)
   ctx.save()
-  rotate90(ctx, canvas.height)
-  draw_it(ctx, max_x, band_width, num_lines, line_width, padding);
+  draw_it(ctx, max_x, band_width, padding);
   ctx.restore
 }

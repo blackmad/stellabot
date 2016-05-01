@@ -4,6 +4,7 @@ var T = new Twit(require('./config.js'));
 var Canvas = require('canvas');
 
 var fs = require('fs');
+var _ = require('underscore')
 
 var argv = require('minimist')(process.argv.slice(2));
 console.dir(argv);
@@ -17,7 +18,7 @@ var draw_modules = [
   require('./jaspers_dilemma'), 
 ]
 
-var draw_module = _.sample(modules);
+var draw_module = _.sample(draw_modules);
 draw_module.draw_everything(canvas, argv['glitch'] || false);
 
 Math.seed = function(s) {
