@@ -117,16 +117,16 @@ function draw_circles(ctx, colors, radius, band_width, padding) {
     var radius = radiusAndColor[0]
     var color = radiusAndColor[1]
     console.log('drawing circle ' + index + ' with color ' + color + ' & radius: ' + radius)
-    ctx.fillStyle = 
+    ctx.fillStyle = color;
     ctx.beginPath();
     ctx.arc(padding,padding,radius-padding, 0,Math.PI);
     ctx.fill();
 
-    // ctx.strokeStyle = '#ffffff'
-    // ctx.lineWidth = padding;
-    // ctx.beginPath();
-    // ctx.arc(padding, padding,radius-padding, 0,Math.PI);
-    // ctx.stroke();
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = padding;
+    ctx.beginPath();
+    ctx.arc(padding, padding,radius-padding, 0,Math.PI);
+    ctx.stroke();
 
     radius -= band_width
   })
@@ -156,6 +156,12 @@ function draw_pane(ctx, size, colors1, colors2) {
   ctx.rect(border_size/2, border_size/2, size - border_size, size - border_size)
   ctx.strokeStyle = getRndColor()
   ctx.lineWidth = size * 0.10
+  ctx.stroke();
+
+  ctx.beginPath()
+  ctx.rect(border_size, border_size, size - border_size*2, size - border_size*2)
+  ctx.strokeStyle = 'white'
+  ctx.lineWidth = 1
   ctx.stroke();
 }
 
