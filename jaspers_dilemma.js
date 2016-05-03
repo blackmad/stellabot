@@ -32,32 +32,35 @@ var colors = null;
 var colorIndex = null;
 
 function initColors() {
+  colorOptions = [
+    tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
+    tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
+    tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
+    tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
+    tinycolor(getRndColor()).tetrad().slice(1),
+    tinycolor(getRndColor()).triad()
+  ]
+  colors = _.sample(colorOptions)
+  //colors = _.times(7, function() { return getRndColor(); })
+
+  var colorFunctions = ['lighten', 'darken', 'brighten', 'saturate', 'desaturate']
+  var colorFunction = _.sample(colorFunctions)
+  colors = colors.map(function(c) { return c[colorFunction](randInt(0, 20)); })
+
+  colors = colors.map(function(t) { return t.toHexString(); })
+
+  colorIndex = 0;
+}
+
+function maybeInitColors() {
   // please remove this awful globals hack
   if (colors === null) {
-    colorOptions = [
-      tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
-      tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
-      tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
-      tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
-      tinycolor(getRndColor()).tetrad().slice(1),
-      tinycolor(getRndColor()).triad()
-    ]
-    colors = _.sample(colorOptions)
-    //colors = _.times(7, function() { return getRndColor(); })
-
-    var colorFunctions = ['lighten', 'darken', 'brighten', 'saturate', 'desaturate']
-    var colorFunction = _.sample(colorFunctions)
-    colors = colors.map(function(c) { return c[colorFunction](randInt(0, 20)); })
-
-    colors = colors.map(function(t) { return t.toHexString(); })
-  }
-  if (colorIndex === null) {
-    colorIndex = 0;
+    initColors()
   }
 }
 
 function getNextColor() {
-  initColors();
+  maybeInitColors();
 
   var c = colors[colorIndex % colors.length];
   colorIndex+=1;
@@ -65,7 +68,7 @@ function getNextColor() {
 }
 
 function getNextColorNoAdvance() {
-  initColors();
+  maybeInitColors();
 
   var c = colors[colorIndex % colors.length];
   return c;
@@ -93,16 +96,11 @@ function make_trapezoid(ctx, length, height, start_hack) {
 
   // tan 45
   var inset = (height) / Math.tan(Math.PI / 4)
-  console.log('length: ' + length)
-  console.log('height: ' + height)
-  console.log('inset: ' + inset)
 
   if (inset + padding > length/2) {
     height = (length/2 - padding / 2) * Math.tan(Math.PI / 4)
     inset = length / 2 - padding / 2 - 2
   }
-
-  console.log('inset: ' + inset)
 
   ctx.save()
   ctx.beginPath()
@@ -145,12 +143,19 @@ function draw_it(ctx, max_x, band_width, padding) {
 }
 
 function draw_everything(canvas, forceGlitch) {
+  initColors();
+
   var ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.moveTo(0, 0)
 
   var band_width = randInt(15, 30)
   var padding = randInt(4, 10)
 
   var max_x = Math.min(canvas.width / 2, canvas.height) * (randInt(75, 95)*1.0/100)
+
+  ctx.save()
 
   ctx.translate((canvas.width - 2*max_x) / 2, (canvas.height - max_x) / 2)
 
@@ -159,12 +164,14 @@ function draw_everything(canvas, forceGlitch) {
   draw_it(ctx, max_x, band_width, padding);
   ctx.restore()
 
+  ctx.save()
   ctx.translate(max_x, 0)
   rotate90(ctx, max_x)
   ctx.scale(1, -1)
   ctx.translate(0, -max_x)
   colors = _.map(colors, function(c) { return tinycolor(c).greyscale().toHexString(); });
-  ctx.save()
   draw_it(ctx, max_x, band_width, padding);
-  ctx.restore
+  ctx.restore()
+
+  ctx.restore()
 }
