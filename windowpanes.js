@@ -94,10 +94,6 @@ function rotateDegrees(ctx, degrees, max_y) {
 }
 
 function draw_circles(ctx, colors, radius, band_width, padding) {
-  ctx.beginPath();
-  ctx.rect(0, 0, radius, radius);
-  ctx.clip();
-
   var radiiAndColors = []
   var currentRadius = band_width
   var currentColorIndex = 0
@@ -132,29 +128,34 @@ function draw_circles(ctx, colors, radius, band_width, padding) {
   })
 }
 
-function draw_pane(ctx, size, colors1, colors2) {
+function clip_to_square(ctx, size, fn) {
+  ctx.save()
+  ctx.beginPath();
+  ctx.rect(0, 0, size, size);
+  ctx.clip();
+  fn()
+  ctx.restore()
+}
+
+function draw_square_pane(ctx, size, colors1, colors2) {
   arc_size = size * 0.12
   border_size = size * 0.10
 
-  ctx.save()
-  ctx.beginPath();
-  ctx.rect(0, 0, size, size);
-  ctx.clip();
-  draw_circles(ctx, colors1, size * 2, arc_size, 1)
-  ctx.restore()
+  clip_to_square(ctx, size, function() {
+    draw_circles(ctx, colors1, size * 2, arc_size, 1)
 
-  ctx.save()
-  ctx.beginPath();
-  ctx.rect(0, 0, size, size);
-  ctx.clip();
-  rotate90(ctx, size)
-  rotate90(ctx, size)
-  draw_circles(ctx, colors2, size * 0.82, arc_size, 1)
-  ctx.restore()
+    rotate90(ctx, size)
+    rotate90(ctx, size)
+    draw_circles(ctx, colors2, size * 0.82, arc_size, 1)
+  });
 
+  make_square_border(ctx, size, border_size, getRndColor());
+}
+
+function make_square_border(ctx, size, border_size, color) {
   ctx.beginPath()
   ctx.rect(border_size/2, border_size/2, size - border_size, size - border_size)
-  ctx.strokeStyle = getRndColor()
+  ctx.strokeStyle = color;
   ctx.lineWidth = size * 0.10
   ctx.stroke();
 
@@ -163,6 +164,43 @@ function draw_pane(ctx, size, colors1, colors2) {
   ctx.strokeStyle = 'white'
   ctx.lineWidth = 1
   ctx.stroke();
+}
+
+function draw_curved_pane(ctx, size, colors1, colors2) {
+  ctx.save()
+  ctx.beginPath()
+  ctx.arc(0, 0, size, 0,Math.PI);
+  ctx.clip()
+
+  arc_size = size * 0.12
+  border_size = size * 0.10
+
+  draw_circles(ctx, colors1, size * 2, arc_size, 1)
+
+  ctx.save()
+  rotate90(ctx, size)
+  rotate90(ctx, size)
+  draw_circles(ctx, colors2, size * 0.82, arc_size, 1)
+  ctx.restore()
+
+  var border_color = getRndColor()
+  
+
+  ctx.beginPath()
+  ctx.arc(0, 0, size - border_size, 0, Math.PI / 2);
+  ctx.strokeStyle = '#ffffff'
+  ctx.lineWidth = 2 
+  ctx.stroke();
+
+  make_square_border(ctx, size, border_size, border_color)
+
+  ctx.beginPath()
+  ctx.arc(0, 0, size - border_size/2 , 0, Math.PI);
+  ctx.strokeStyle = border_color;
+  ctx.lineWidth = size * 0.10
+  ctx.stroke();
+
+  ctx.restore();
 }
 
 
@@ -186,7 +224,7 @@ function draw_everything(canvas, forceGlitch) {
   var colors2 = makeColors()
 
   ctx.save()
-  draw_pane(ctx, 300, colors1, colors2)
+  draw_curved_pane(ctx, 300, colors1, colors2)
   ctx.restore()
 
   // // flip vertical
@@ -197,7 +235,7 @@ function draw_everything(canvas, forceGlitch) {
   ctx.scale(1, -1)
   ctx.translate(300, -300)
 
-  draw_pane(ctx, 300, colors2, makeColors())
+  // draw_curved_pane(ctx, 300, colors2, makeColors())
 
   ctx.restore()
 
