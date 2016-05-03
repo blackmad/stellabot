@@ -24,13 +24,32 @@ function getRndColor() {
     return 'rgb(' + r + ',' + g + ',' + b + ')';
 }
 
+function randInt (low, high) {
+    return Math.floor(Math.random() * (high - low) + low);
+}
+
 var colors = null;
 var colorIndex = null;
 
 function initColors() {
   // please remove this awful globals hack
   if (colors === null) {
-    colors = _.times(7, function() { return getRndColor(); })
+    colorOptions = [
+      tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
+      tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
+      tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
+      tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
+      tinycolor(getRndColor()).tetrad().slice(1),
+      tinycolor(getRndColor()).triad()
+    ]
+    colors = _.sample(colorOptions)
+    //colors = _.times(7, function() { return getRndColor(); })
+
+    var colorFunctions = ['lighten', 'darken', 'brighten', 'saturate', 'desaturate']
+    var colorFunction = _.sample(colorFunctions)
+    colors = colors.map(function(c) { return c[colorFunction](randInt(0, 20)); })
+
+    colors = colors.map(function(t) { return t.toHexString(); })
   }
   if (colorIndex === null) {
     colorIndex = 0;
