@@ -85,7 +85,7 @@ function rotateDegrees(ctx, degrees, max_y) {
   ctx.translate(0, -max_y)
 }
 
-function make_trapezoid(ctx, length, height) {
+function make_trapezoid(ctx, length, height, start_hack) {
 
   var padding = 5
 
@@ -93,11 +93,26 @@ function make_trapezoid(ctx, length, height) {
 
   // tan 45
   var inset = (height) / Math.tan(Math.PI / 4)
+  console.log('length: ' + length)
+  console.log('height: ' + height)
+  console.log('inset: ' + inset)
+
+  if (inset + padding > length/2) {
+    height = (length/2 - padding / 2) * Math.tan(Math.PI / 4)
+    inset = length / 2 - padding / 2 - 2
+  }
+
+  console.log('inset: ' + inset)
 
   ctx.save()
   ctx.beginPath()
-  ctx.moveTo(padding, 0)
-  ctx.lineTo(inset + padding, height)
+  if (start_hack) { 
+    ctx.moveTo(0, 0)
+    ctx.lineTo(0, height)
+  } else {
+    ctx.moveTo(padding, 0)
+    ctx.lineTo(inset + padding, height)
+  }
   ctx.lineTo(length - inset - padding, height)
   ctx.lineTo(length - padding, 0)
   ctx.closePath()
@@ -108,14 +123,18 @@ function make_trapezoid(ctx, length, height) {
 }
 
 function draw_it(ctx, max_x, band_width, padding) {
-   ctx.fillStyle = getNextColorNoAdvance()
-   ctx.fillRect(0, 0, band_width , band_width - padding)
+   var iterations = Math.floor(2*max_x / band_width)
+   if (iterations % 2 == 0) {
+    iterations -= 1
+   }
 
-  _.times(Math.floor(2*max_x / band_width) - 1, function(index) {
+  _.times(iterations, function(index) {
     if (index > 2 && index % 2 == 1) {
       max_x -= band_width
     }
-    make_trapezoid(ctx, max_x, band_width)
+    console.log('index ' + index)
+    console.log('max x: ' + max_x)
+    make_trapezoid(ctx, max_x, band_width, index == 0)
     rotate90(ctx, max_x)
   })
 
@@ -128,20 +147,20 @@ function draw_it(ctx, max_x, band_width, padding) {
 function draw_everything(canvas, forceGlitch) {
   var ctx = canvas.getContext('2d');
 
-  var band_width = 25
-  var padding = 5
+  var band_width = randInt(15, 30)
+  var padding = randInt(4, 10)
 
-  var max_x = Math.min(canvas.width, canvas.height) / 2;
+  var max_x = Math.min(canvas.width / 2, canvas.height) * (randInt(75, 95)*1.0/100)
 
   ctx.translate((canvas.width - 2*max_x) / 2, (canvas.height - max_x) / 2)
 
   ctx.save()
-  rotateDegrees(ctx, 90, canvas.height/2)
+  rotateDegrees(ctx, 90, max_x)
   draw_it(ctx, max_x, band_width, padding);
   ctx.restore()
 
   ctx.translate(max_x, 0)
-  rotate90(ctx, canvas.height/2)
+  rotate90(ctx, max_x)
   ctx.scale(1, -1)
   ctx.translate(0, -max_x)
   colors = _.map(colors, function(c) { return tinycolor(c).greyscale().toHexString(); });
