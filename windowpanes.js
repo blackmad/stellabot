@@ -169,7 +169,10 @@ function make_square_border(ctx, size, border_size, color) {
 function draw_curved_pane(ctx, size, colors1, colors2) {
   ctx.save()
   ctx.beginPath()
-  ctx.arc(0, 0, size, 0,Math.PI);
+  ctx.arc(0, 0, size, 0,Math.PI/2);
+  ctx.lineTo(0, 0)
+  ctx.closePath()
+  // ctx.stroke()
   ctx.clip()
 
   arc_size = size * 0.12
@@ -185,7 +188,6 @@ function draw_curved_pane(ctx, size, colors1, colors2) {
 
   var border_color = getRndColor()
   
-
   ctx.beginPath()
   ctx.arc(0, 0, size - border_size, 0, Math.PI / 2);
   ctx.strokeStyle = '#ffffff'
@@ -223,8 +225,31 @@ function draw_everything(canvas, forceGlitch) {
   var colors1 = makeColors()
   var colors2 = makeColors()
 
+  var pane_size = 100
+
   ctx.save()
-  draw_curved_pane(ctx, 300, colors1, colors2)
+  context.rotate(angle * Math.PI / 180); // in the screenshot I used angle = 20
+  context.translate(angle * 4, 2);
+  draw_curved_pane(ctx, pane_size, colors1, makeColors())
+  ctx.restore()
+
+  ctx.translate(pane_size, 0)
+
+  ctx.save()
+  draw_square_pane(ctx, pane_size, colors1, colors2)
+  ctx.restore()
+
+  ctx.translate(pane_size, 0)
+
+  // ctx.save()
+  // draw_curved_pane(ctx, pane_size, colors2, makeColors())
+  // ctx.restore()
+
+  ctx.save()
+  // flip vertical
+  ctx.scale(1, -1)
+  ctx.translate(0, -pane_size)
+  draw_curved_pane(ctx, pane_size, colors2, makeColors())
   ctx.restore()
 
   // // flip vertical
@@ -233,7 +258,7 @@ function draw_everything(canvas, forceGlitch) {
 
   // flip horizontal
   ctx.scale(1, -1)
-  ctx.translate(300, -300)
+  ctx.translate(pane_size, -pane_size)
 
   // draw_curved_pane(ctx, 300, colors2, makeColors())
 
