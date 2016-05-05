@@ -16,7 +16,17 @@ http://blackmad.github.io/stellabot/benjamin_moore.html
 http://blackmad.github.io/stellabot/jaspers_dilemma.html
 
 ## TODO
+
+### Benjamin Moore Series
+- pick attractive color ordering
+- use the twitter image size ratio better
+
 ### Jasper's Dilemma
 - pick attractive color ordering
 - randomize line size / ratios
-- use more available space
+
+### Windowpanes / Protractors
+- draw the last band in the arc half & half
+- figure out how to do multi-row with up-down circles
+- make the final band look like it's mostly the right size
+- still, with the colors

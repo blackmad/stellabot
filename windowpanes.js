@@ -44,6 +44,7 @@ function shuffle(array) {
 
 
 function getRndColor() {
+  return makeColors()[0];
     var r = 255*Math.random()|0,
         g = 255*Math.random()|0,
         b = 255*Math.random()|0;
@@ -57,8 +58,16 @@ function randInt (low, high) {
 var colors = null;
 var colorIndex = null;
 
+var l = randInt(10, 100)
 function makeColors() {
-  return  tinycolor(getRndColor()).analogous(slices = 400, results = 5).map(function(t) { return t.toHexString(); });
+  if (l === null || l === undefined) {
+    l = randInt(10, 100)
+  }
+  // return  tinycolor(getRndColor()).analogous(slices = 400, results = 5).map(function(t) { return t.toHexString(); });
+  return _.times(10, function() {
+    //return tinycolor({ h: randInt(0, 100), s: randInt(0, 100), l: 50 })
+    return tinycolor({ h: randInt(0, 100), s: randInt(0, 100), l: l })
+  })
 }
 
 function initColors() {
@@ -198,7 +207,7 @@ function draw_curved_border(ctx, size, border_size, border_color) {
   ctx.beginPath()
   ctx.arc(0, 0, size - border_size, 0, Math.PI / 2);
   ctx.strokeStyle = '#ffffff'
-  ctx.lineWidth = 2 
+  ctx.lineWidth = 2
   ctx.stroke();
 
   make_square_border(ctx, size, border_size, border_color)
@@ -233,7 +242,7 @@ function draw_curved_pane(ctx, size, colors1, colors2) {
   ctx.restore()
 
   var border_color = getRndColor()
-  
+
 
 }
 
@@ -260,8 +269,9 @@ function draw_everything(canvas, forceGlitch) {
   var canvas_size = canvas.width
   var num_panes_per_row = 5
   var pane_size = canvas_size / num_panes_per_row
+  canvas.height = pane_size
 
-  var arc_size = pane_size * 0.15
+  var arc_size = pane_size * 0.12
   var border_size = pane_size * 0.10
   var arc_border_size = 1
 
@@ -294,7 +304,7 @@ function draw_everything(canvas, forceGlitch) {
   ctx.rotate(Math.PI)
   ctx.translate(-pane_size*(num_panes_per_row), -pane_size)
   // ctx.translate(pane_size*(num_panes_per_row-1), 0)
-  
+
   draw_curved_border(ctx, pane_size, border_size, getRndColor());
   ctx.restore()
 
