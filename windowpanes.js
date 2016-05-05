@@ -38,7 +38,7 @@ var colors = null;
 var colorIndex = null;
 
 function makeColors() {
-  return  tinycolor(getRndColor()).analogous(slices = 5, results = 40).map(function(t) { return t.toHexString(); });
+  return  tinycolor(getRndColor()).analogous(slices = 400, results = 5).map(function(t) { return t.toHexString(); });
 }
 
 function initColors() {
@@ -47,8 +47,6 @@ function initColors() {
     tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
     tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
     tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
-    tinycolor(getRndColor()).tetrad().slice(1),
-    tinycolor(getRndColor()).triad()
   ]
   colors = _.sample(colorOptions)
   //colors = _.times(7, function() { return getRndColor(); })
@@ -208,8 +206,8 @@ function draw_curved_pane(ctx, size, colors1, colors2) {
 
 function draw_everything(canvas, forceGlitch) {
   // var seed = new Date().getTime()
-  var seed = 100
-  Math.random = Math.seed(seed)
+  // var seed = 100
+  // Math.random = Math.seed(seed)
 
   initColors();
 
@@ -220,36 +218,37 @@ function draw_everything(canvas, forceGlitch) {
   ctx.moveTo(0, 0)
 
   ctx.save()
-  ctx.translate(50, 50)
+  // ctx.translate(50, 50)
 
   var colors1 = makeColors()
   var colors2 = makeColors()
 
-  var pane_size = 100
+  var pane_size = canvas.width / 5.5
 
   ctx.save()
-  context.rotate(angle * Math.PI / 180); // in the screenshot I used angle = 20
-  context.translate(angle * 4, 2);
+  ctx.rotate(Math.PI / 2); // in the screenshot I used angle = 20
+  ctx.translate(0, -pane_size)
   draw_curved_pane(ctx, pane_size, colors1, makeColors())
   ctx.restore()
 
+  lastColors = colors1
+  nextColors = null
+  _.times(3, function() {
+    ctx.translate(pane_size, 0)
+    nextColors = makeColors()
+    ctx.save()
+    draw_square_pane(ctx, pane_size, lastColors, nextColors)
+    ctx.restore()
+    lastColors = nextColors
+  });
+
   ctx.translate(pane_size, 0)
-
-  ctx.save()
-  draw_square_pane(ctx, pane_size, colors1, colors2)
-  ctx.restore()
-
-  ctx.translate(pane_size, 0)
-
-  // ctx.save()
-  // draw_curved_pane(ctx, pane_size, colors2, makeColors())
-  // ctx.restore()
 
   ctx.save()
   // flip vertical
   ctx.scale(1, -1)
   ctx.translate(0, -pane_size)
-  draw_curved_pane(ctx, pane_size, colors2, makeColors())
+  draw_curved_pane(ctx, pane_size, lastColors, makeColors())
   ctx.restore()
 
   // // flip vertical
