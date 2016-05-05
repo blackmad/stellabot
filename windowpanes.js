@@ -23,6 +23,26 @@ Math.seed = function(s) {
   };
 };
 
+function shuffle(array) {
+  var currentIndex = array.length, temporaryValue, randomIndex;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
+
+
 function getRndColor() {
     var r = 255*Math.random()|0,
         g = 255*Math.random()|0,
@@ -164,6 +184,34 @@ function make_square_border(ctx, size, border_size, color) {
   ctx.stroke();
 }
 
+function draw_curved_border(ctx, size, border_size, border_color) {
+  ctx.save()
+  ctx.rotate(Math.PI / 2)
+  ctx.translate(0, -size)
+
+  ctx.beginPath()
+  ctx.arc(0, 0, size, 0,Math.PI/2);
+  ctx.lineTo(0, 0)
+  ctx.closePath()
+  ctx.clip()
+
+  ctx.beginPath()
+  ctx.arc(0, 0, size - border_size, 0, Math.PI / 2);
+  ctx.strokeStyle = '#ffffff'
+  ctx.lineWidth = 2 
+  ctx.stroke();
+
+  make_square_border(ctx, size, border_size, border_color)
+
+  ctx.beginPath()
+  ctx.arc(0, 0, size - border_size/2 , 0, Math.PI);
+  ctx.strokeStyle = border_color;
+  ctx.lineWidth = size * 0.10
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 function draw_curved_pane(ctx, size, colors1, colors2) {
   ctx.save()
   ctx.beginPath()
@@ -186,21 +234,7 @@ function draw_curved_pane(ctx, size, colors1, colors2) {
 
   var border_color = getRndColor()
   
-  ctx.beginPath()
-  ctx.arc(0, 0, size - border_size, 0, Math.PI / 2);
-  ctx.strokeStyle = '#ffffff'
-  ctx.lineWidth = 2 
-  ctx.stroke();
 
-  make_square_border(ctx, size, border_size, border_color)
-
-  ctx.beginPath()
-  ctx.arc(0, 0, size - border_size/2 , 0, Math.PI);
-  ctx.strokeStyle = border_color;
-  ctx.lineWidth = size * 0.10
-  ctx.stroke();
-
-  ctx.restore();
 }
 
 
@@ -223,44 +257,83 @@ function draw_everything(canvas, forceGlitch) {
   var colors1 = makeColors()
   var colors2 = makeColors()
 
-  var pane_size = canvas.width / 5.5
+  var canvas_size = canvas.width
+  var num_panes_per_row = 5
+  var pane_size = canvas_size / num_panes_per_row
+
+  var arc_size = pane_size * 0.15
+  var border_size = pane_size * 0.10
+  var arc_border_size = 1
+
+  var circle_work = _.times(num_panes_per_row - 1, function(node_index) {
+    return function() {
+      ctx.save()
+      ctx.translate(pane_size*(node_index+1), 0)
+      if (node_index % 2 == 1) {
+        ctx.scale(1, -1)
+        ctx.translate(0, -pane_size)
+      }
+      draw_circles(ctx, makeColors(), pane_size, arc_size, arc_border_size)
+      ctx.restore()
+    }
+  })
+
+  _.each(shuffle(circle_work), function(fn) { fn(); })
+
+  draw_curved_border(ctx, pane_size, border_size, getRndColor());
 
   ctx.save()
-  ctx.rotate(Math.PI / 2); // in the screenshot I used angle = 20
-  ctx.translate(0, -pane_size)
-  draw_curved_pane(ctx, pane_size, colors1, makeColors())
-  ctx.restore()
-
-  lastColors = colors1
-  nextColors = null
-  _.times(3, function() {
-    ctx.translate(pane_size, 0)
-    nextColors = makeColors()
-    ctx.save()
-    draw_square_pane(ctx, pane_size, lastColors, nextColors)
-    ctx.restore()
-    lastColors = nextColors
-  });
-
   ctx.translate(pane_size, 0)
+  _.times(num_panes_per_row-2, function(node_index) {
+    make_square_border(ctx, pane_size, border_size, getRndColor());
+    ctx.translate(pane_size, 0)
+  })
+  ctx.restore()
 
   ctx.save()
-  // flip vertical
-  ctx.scale(1, -1)
-  ctx.translate(0, -pane_size)
-  draw_curved_pane(ctx, pane_size, lastColors, makeColors())
+  ctx.rotate(Math.PI)
+  ctx.translate(-pane_size*(num_panes_per_row), -pane_size)
+  // ctx.translate(pane_size*(num_panes_per_row-1), 0)
+  
+  draw_curved_border(ctx, pane_size, border_size, getRndColor());
   ctx.restore()
 
+  // ctx.save()
+  // ctx.rotate(Math.PI / 2); // in the screenshot I used angle = 20
+  // ctx.translate(0, -pane_size)
+  // draw_curved_pane(ctx, pane_size, colors1, makeColors())
+  // ctx.restore()
+
+  // lastColors = colors1
+  // nextColors = null
+  // _.times(3, function() {
+  //   ctx.translate(pane_size, 0)
+  //   nextColors = makeColors()
+  //   ctx.save()
+  //   draw_square_pane(ctx, pane_size, lastColors, nextColors)
+  //   ctx.restore()
+  //   lastColors = nextColors
+  // });
+
+  // ctx.translate(pane_size, 0)
+
+  // ctx.save()
   // // flip vertical
-  // ctx.scale(-1, 1)
-  // ctx.translate(-300, 300)
+  // ctx.scale(1, -1)
+  // ctx.translate(0, -pane_size)
+  // draw_curved_pane(ctx, pane_size, lastColors, makeColors())
+  // ctx.restore()
 
-  // flip horizontal
-  ctx.scale(1, -1)
-  ctx.translate(pane_size, -pane_size)
+  // // // flip vertical
+  // // ctx.scale(-1, 1)
+  // // ctx.translate(-300, 300)
 
-  // draw_curved_pane(ctx, 300, colors2, makeColors())
+  // // flip horizontal
+  // ctx.scale(1, -1)
+  // ctx.translate(pane_size, -pane_size)
 
-  ctx.restore()
+  // // draw_curved_pane(ctx, 300, colors2, makeColors())
+
+  // ctx.restore()
 
 }
