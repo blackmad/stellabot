@@ -2,10 +2,25 @@
 <script type='text/javascript' src='https://bgrins.github.io/TinyColor/tinycolor.js'></script>
 <script src="benjamin_moore.js"></script>
 
-<canvas id="myCanvas" width="800" height="800" style="border:1px solid #000000;">
-</canvas>
+<body onresize="resize_canvas()">
+  <canvas id="myCanvas" width="100%" height="100%" style="border:1px solid #000000;">
+  </canvas>
 
-<script>
-var c = document.getElementById("myCanvas");
-draw_everything(c, false);
-</script>
+  <script>
+        function resize_canvas(){
+              canvas = document.getElementById("myCanvas");
+              if (canvas.width  < window.innerWidth)
+              {
+                  canvas.width  = window.innerWidth;
+              }
+
+              if (canvas.height < window.innerHeight)
+              {
+                  canvas.height = window.innerHeight;
+              }
+              draw_everything(canvas, false);
+          }
+
+  resize_canvas();
+  </script>
+</body>

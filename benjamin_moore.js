@@ -64,8 +64,6 @@ function initColors() {
 
   colors = colors.map(function(t) { return t.toHexString(); })
 
-  debugger;
-
   colorIndex = 0;
 }
 
@@ -251,6 +249,7 @@ function draw_everything(canvas, alwaysGlitch) {
   shouldGlitchAtAll = alwaysGlitch || Math.random() < 0.1;
 
   var ctx = canvas.getContext('2d');
+  ctx.save();
 
   var max_x = canvas.width;
   var max_y = canvas.height;
@@ -331,4 +330,6 @@ function draw_everything(canvas, alwaysGlitch) {
     make_shape_helper(ctx, num_lines, band_to_line_width_multiplier, square_size, square_size, drawing_func)
     ctx.restore()
   })
+
+  ctx.restore();
 }
