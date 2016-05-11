@@ -1,5 +1,14 @@
+function randInt (low, high) {
+    return Math.floor(Math.random() * (high - low) + low);
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   var _ = require('underscore');
+  var tinycolor = require("tinycolor2");
+
+  var squares_per_row = randInt(2, 4)
+  var rows = randInt(1, 3)
+  var total_squares = squares_per_row * rows
 }
 
 module.exports = {
@@ -8,10 +17,6 @@ module.exports = {
 };
 
 var shouldGlitchAtAll = null;
-
-function randInt (low, high) {
-    return Math.floor(Math.random() * (high - low) + low);
-}
 
 function shuffle(array) {
   var currentIndex = array.length, temporaryValue, randomIndex;
@@ -39,10 +44,54 @@ function getRndColor() {
     return 'rgb(' + r + ',' + g + ',' + b + ')';
 }
 
+var colors = null;
+var colorIndex = null;
+
+function initColors() {
+  colorOptions = [
+    tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = total_squares),
+    tinycolor(getRndColor()).tetrad().slice(1),
+    tinycolor(getRndColor()).triad(),
+    _.times(total_squares, function() { return tinycolor(getRndColor()); })
+  ]
+  colors = _.sample(colorOptions)
+  //colors = 
+
+  var colorFunctions = ['lighten', 'darken', 'brighten', 'saturate', 'desaturate']
+  var colorFunction = _.sample(colorFunctions)
+  colors = colors.map(function(c) { return c[colorFunction](randInt(0, 20)); })
+
+  colors = colors.map(function(t) { return t.toHexString(); })
+
+  colorIndex = 0;
+}
+
+function maybeInitColors() {
+  // please remove this awful globals hack
+  if (colors === null) {
+    initColors()
+  }
+}
+
+function getNextColor() {
+  maybeInitColors();
+
+  var c = colors[colorIndex % colors.length];
+  colorIndex+=1;
+  return c;
+}
+
+function getNextColorNoAdvance() {
+  maybeInitColors();
+
+  var c = colors[colorIndex % colors.length];
+  return c;
+}
+
 function make_shape_helper(ctx, num_lines, band_to_line_width_multiplier, max_x, max_y, draw_cb) {
   // pick color
   // TODO: make these colors within reasonable bounds, complimentary, etc
-  var bg_color = getRndColor();
+  var bg_color = getNextColor();
   var fg_color = '#FFFFFF';
 
   // draw background
@@ -207,20 +256,27 @@ function draw_everything(canvas, alwaysGlitch) {
 
   // draw background
   ctx.fillStyle = '#e0e0e0'
+  // ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, max_x, max_y);
 
   // pick number of lines
   var num_lines = randInt(5, 10) * 2;
   var num_bands = num_lines + 1
 
-  var padding_ratio = 0.1 + 0.1*Math.random()
-  var squares_per_row = 3
-  var rows = 2
-  var square_size = (max_x / squares_per_row) * (1 - padding_ratio)
-  var x_padding_size = (max_x / squares_per_row) * padding_ratio
+  console.log((max_x / squares_per_row))
+  console.log((max_y / rows))
+  console.log('rows: ' + rows)
+  console.log('cols: ' + squares_per_row)
 
-  // WRONG
-  var y_padding_size = (max_x / squares_per_row) * padding_ratio
+  var square_size = Math.min(
+    (max_x / squares_per_row),
+    (max_y / rows)
+  ) * (randInt(60, 90)/100)
+
+  var padding_between_squares = Math.min(
+    (max_y - (square_size * rows)) / (rows - 1),
+    square_size * 0.1
+  )
 
   // figure out line spacing
   // TODO: make this very clean integers the whole way
@@ -244,21 +300,32 @@ function draw_everything(canvas, alwaysGlitch) {
 
   shuffle(drawing_funcs)
 
-  _(drawing_funcs.length).times(function(index) {
-    var y_offset = Math.floor(index / squares_per_row) * (max_x / squares_per_row)
-    var x_offset = index % squares_per_row* (max_x / squares_per_row)
+  var inner_x = (squares_per_row * square_size) + (padding_between_squares * (squares_per_row - 1))
+  var inner_y = (rows * square_size) + (padding_between_squares * (rows - 1))
+
+  ctx.translate(
+    (max_x - inner_x) / 2,
+    (max_y - inner_y) / 2
+  )
+
+  _(rows*squares_per_row).times(function(index) {
+    var y_index = Math.floor(index / squares_per_row)
+    var y_offset = (y_index * square_size) + (y_index * padding_between_squares)
+
+    var x_index = index % squares_per_row
+    var x_offset = (x_index * square_size) + (x_index * padding_between_squares)
 
     ctx.save()
 
     ctx.translate(x_offset, y_offset)
-    ctx.translate(x_padding_size / 2, y_padding_size / 2)
 
     // possibly spin it
     ctx.translate(square_size/2, square_size/2)
     ctx.rotate(Math.PI * (randInt(0, 3) / 2))
     ctx.translate(-square_size/2, -square_size/2)
 
-    make_shape_helper(ctx, num_lines, band_to_line_width_multiplier, square_size, square_size, drawing_funcs[index])
+    drawing_func = drawing_funcs[index % drawing_funcs.length]
+    make_shape_helper(ctx, num_lines, band_to_line_width_multiplier, square_size, square_size, drawing_func)
     ctx.restore()
   })
 }
