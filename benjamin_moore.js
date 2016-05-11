@@ -6,15 +6,19 @@ if (typeof module !== 'undefined' && module.exports) {
   var _ = require('underscore');
   var tinycolor = require("tinycolor2");
 
-  var squares_per_row = randInt(2, 4)
-  var rows = randInt(1, 3)
-  var total_squares = squares_per_row * rows
+  module.exports = {
+    draw_everything: draw_everything,
+    title: 'Benjamin Moore Series'
+  };
 }
 
-module.exports = {
-  draw_everything: draw_everything,
-  title: 'Benjamin Moore Series'
-};
+var squares_per_row = randInt(2, 4)
+var rows = randInt(1, 3)
+var total_squares = squares_per_row * rows
+
+var colors = null;
+var colorIndex = null;
+initColors();
 
 var shouldGlitchAtAll = null;
 
@@ -44,9 +48,6 @@ function getRndColor() {
     return 'rgb(' + r + ',' + g + ',' + b + ')';
 }
 
-var colors = null;
-var colorIndex = null;
-
 function initColors() {
   colorOptions = [
     tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = total_squares),
@@ -62,6 +63,8 @@ function initColors() {
   colors = colors.map(function(c) { return c[colorFunction](randInt(0, 20)); })
 
   colors = colors.map(function(t) { return t.toHexString(); })
+
+  debugger;
 
   colorIndex = 0;
 }
