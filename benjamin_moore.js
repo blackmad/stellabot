@@ -1,7 +1,3 @@
-function randInt (low, high) {
-    return Math.floor(Math.random() * (high - low) + low);
-}
-
 if (typeof module !== 'undefined' && module.exports) {
   var _ = require('underscore');
   var tinycolor = require("tinycolor2");
@@ -12,15 +8,9 @@ if (typeof module !== 'undefined' && module.exports) {
   };
 }
 
-var squares_per_row = randInt(2, 4)
-var rows = randInt(1, 3)
-var total_squares = squares_per_row * rows
-
-var colors = null;
-var colorIndex = null;
-initColors();
-
-var shouldGlitchAtAll = null;
+function randInt (low, high) {
+    return Math.floor(Math.random() * (high - low) + low);
+}
 
 function shuffle(array) {
   var currentIndex = array.length, temporaryValue, randomIndex;
@@ -48,12 +38,18 @@ function getRndColor() {
     return 'rgb(' + r + ',' + g + ',' + b + ')';
 }
 
+var colors = null;
+var colorIndex = null;
+initColors();
+
+var shouldGlitchAtAll = null;
+
 function initColors() {
   colorOptions = [
-    tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = total_squares),
+    tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = 100),
     tinycolor(getRndColor()).tetrad().slice(1),
     tinycolor(getRndColor()).triad(),
-    _.times(total_squares, function() { return tinycolor(getRndColor()); })
+    _.times(100, function() { return tinycolor(getRndColor()); })
   ]
   colors = _.sample(colorOptions)
   //colors = 
@@ -79,13 +75,6 @@ function getNextColor() {
 
   var c = colors[colorIndex % colors.length];
   colorIndex+=1;
-  return c;
-}
-
-function getNextColorNoAdvance() {
-  maybeInitColors();
-
-  var c = colors[colorIndex % colors.length];
   return c;
 }
 
@@ -117,7 +106,7 @@ function make_shape_helper(ctx, num_lines, band_to_line_width_multiplier, max_x,
 
 function calculateOffset(line_index, line_width, band_width) {
   var glitch = Math.random() < 0.6
-  if (shouldGlitchAtAll) { // && glitch) {
+  if (shouldGlitchAtAll && glitch) {
     if (Math.random() < 0.5) {
       return function() { return (line_index*line_width + (line_index+1)*band_width + line_width / 2) + Math.random()*50 }
     } else {
@@ -264,6 +253,10 @@ function draw_everything(canvas, alwaysGlitch) {
   // pick number of lines
   var num_lines = randInt(5, 10) * 2;
   var num_bands = num_lines + 1
+
+  var squares_per_row = randInt(2, 20)
+  var rows = Math.max(1, Math.floor(squares_per_row * (max_y / max_x) * (randInt(60, 100)/100)))
+  var total_squares = squares_per_row * rows
 
   console.log((max_x / squares_per_row))
   console.log((max_y / rows))

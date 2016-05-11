@@ -10,20 +10,12 @@
   </canvas>
 
   <script>
-        function resize_canvas(){
-              canvas = document.getElementById("myCanvas");
-              if (canvas.width  < window.innerWidth)
-              {
-                  canvas.width  = window.innerWidth;
-              }
-
-              if (canvas.height < window.innerHeight)
-              {
-                  canvas.height = window.innerHeight;
-              }
-               draw_everything(canvas, true);
-             
-          }
+    function resize_canvas(){
+      canvas = document.getElementById("myCanvas");
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+      draw_everything(canvas, false)
+    }
 
   resize_canvas();
   </script>
