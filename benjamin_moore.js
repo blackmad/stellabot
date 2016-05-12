@@ -13,7 +13,7 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 var squares_per_row = randInt(2, 4)
-var rows = randInt(1, 3)
+var rows = randInt(1, 6)
 var total_squares = squares_per_row * rows
 
 var colors = null;
