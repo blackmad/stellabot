@@ -122,14 +122,15 @@ function rotateDegrees(ctx, degrees, max_y) {
 
 function draw_circles(ctx, colors, radius, band_width, padding) {
   var radiiAndColors = []
-  var currentRadius = band_width
+  var currentRadius = radius
   var currentColorIndex = 0
-  while (currentRadius < radius) {
+
+  while (currentRadius > 0) {
     radiiAndColors.push([currentRadius, colors[currentColorIndex % colors.length]])
-    currentRadius += band_width;
+    currentRadius -= band_width;
     currentColorIndex += 1
   }
-  radiiAndColors.reverse()
+  // radiiAndColors.reverse()
   console.log(radiiAndColors)
 
   console.log('\n\n circles!!!!')
@@ -137,6 +138,10 @@ function draw_circles(ctx, colors, radius, band_width, padding) {
 
   var iterations = Math.floor(radius / band_width)
   _.each(radiiAndColors, function(radiusAndColor, index) {
+    if (index == 0) {
+      // draw the two halves of this 
+    }
+
     var radius = radiusAndColor[0]
     var color = radiusAndColor[1]
     console.log('drawing circle ' + index + ' with color ' + color + ' & radius: ' + radius)
@@ -164,20 +169,6 @@ function clip_to_square(ctx, size, fn) {
   ctx.restore()
 }
 
-function draw_square_pane(ctx, size, colors1, colors2) {
-  arc_size = size * 0.12
-  border_size = size * 0.10
-
-  clip_to_square(ctx, size, function() {
-    draw_circles(ctx, colors1, size * 2, arc_size, 1)
-
-    rotate90(ctx, size)
-    rotate90(ctx, size)
-    draw_circles(ctx, colors2, size * 0.82, arc_size, 1)
-  });
-
-  make_square_border(ctx, size, border_size, getRndColor());
-}
 
 function make_square_border(ctx, size, border_size, color) {
   ctx.beginPath()
@@ -242,8 +233,6 @@ function draw_curved_pane(ctx, size, colors1, colors2) {
   ctx.restore()
 
   var border_color = getRndColor()
-
-
 }
 
 
@@ -283,7 +272,7 @@ function draw_everything(canvas, forceGlitch) {
         ctx.scale(1, -1)
         ctx.translate(0, -pane_size)
       }
-      draw_circles(ctx, makeColors(), pane_size, arc_size, arc_border_size)
+      draw_circles(ctx, makeColors(), pane_size - border_size + 1, arc_size, arc_border_size)
       ctx.restore()
     }
   })
