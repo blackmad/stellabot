@@ -8,6 +8,10 @@
     "shuffle-array" : "latest",
     "minimist": "latest",
     "tinycolor2": "latest",
-    "fabric": "latest"
+    "fabric": "latest",
+    "falafel" : "latest",
+    "tmp" : "latest",
+    "random-weighted-choice" : "latest",
+    "shuffle-array": "latest"
   }
 }

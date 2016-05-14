@@ -5,6 +5,7 @@ function randInt (low, high) {
 if (typeof module !== 'undefined' && module.exports) {
   var _ = require('underscore');
   var tinycolor = require("tinycolor2");
+  var shuffle = require('shuffle-array');
 
   module.exports = {
     draw_everything: draw_everything,
@@ -12,8 +13,8 @@ if (typeof module !== 'undefined' && module.exports) {
   };
 }
 
-var squares_per_row = randInt(2, 4)
-var rows = randInt(1, 6)
+var squares_per_row = randInt(2, 3)
+var rows = randInt(1, 3)
 var total_squares = squares_per_row * rows
 
 var colors = null;
@@ -21,25 +22,6 @@ var colorIndex = null;
 initColors();
 
 var shouldGlitchAtAll = null;
-
-function shuffle(array) {
-  var currentIndex = array.length, temporaryValue, randomIndex;
-
-  // While there remain elements to shuffle...
-  while (0 !== currentIndex) {
-
-    // Pick a remaining element...
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex -= 1;
-
-    // And swap it with the current element.
-    temporaryValue = array[currentIndex];
-    array[currentIndex] = array[randomIndex];
-    array[randomIndex] = temporaryValue;
-  }
-
-  return array;
-}
 
 function getRndColor() {
     var r = 255*Math.random()|0,
@@ -119,7 +101,7 @@ function make_shape_helper(ctx, num_lines, band_to_line_width_multiplier, max_x,
 
 function calculateOffset(line_index, line_width, band_width) {
   var glitch = Math.random() < 0.6
-  if (shouldGlitchAtAll) { // && glitch) {
+  if (shouldGlitchAtAll && false ) { // && glitch) {
     if (Math.random() < 0.5) {
       return function() { return (line_index*line_width + (line_index+1)*band_width + line_width / 2) + Math.random()*50 }
     } else {
@@ -136,7 +118,7 @@ function calculateOffset(line_index, line_width, band_width) {
 function make_corners(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.lineWidth = line_width;
   ctx.clip();
-  _(num_lines).times(function(line_index) {
+  _.times(num_lines, function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
     ctx.beginPath()
     ctx.moveTo(offset(), 0)
@@ -149,7 +131,7 @@ function make_corners(ctx, max_x, max_y, line_width, band_width, bg_color, fg_co
 function make_squares(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.lineWidth = line_width;
   // num_lines must be even
-  _(num_lines / 2).times(function(line_index) {
+  _.times(num_lines / 2, function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
     ctx.strokeRect(offset(), offset(), max_x - 2*offset(), max_y - 2*offset());
   })
@@ -157,7 +139,7 @@ function make_squares(ctx, max_x, max_y, line_width, band_width, bg_color, fg_co
 
 function make_lines(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.lineWidth = line_width;
-  _(num_lines).times(function(line_index) {
+  _.times(num_lines, function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
     ctx.beginPath()
     ctx.moveTo(offset(), 0)
@@ -170,7 +152,7 @@ function make_lines(ctx, max_x, max_y, line_width, band_width, bg_color, fg_colo
 function make_slants(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.antialias = 'default';
   ctx.lineWidth = line_width;
-  _(num_lines * 3).times(function(line_index) {
+  _.times(num_lines * 3, function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
     ctx.beginPath()
     ctx.moveTo(offset() - 15, -15)
@@ -191,7 +173,7 @@ function make_cross(ctx, max_x, max_y, line_width, band_width, bg_color, fg_colo
 
   ctx.lineWidth = line_width;
   function draw_quarter() {
-    _(num_lines / 2 ).times(function(line_index) {
+    _.times(num_lines / 2,function(line_index) {
       line_index = num_lines - line_index
       var offset = calculateOffset(line_index, line_width, band_width)
       ctx.beginPath()
@@ -236,7 +218,7 @@ function make_cross(ctx, max_x, max_y, line_width, band_width, bg_color, fg_colo
 function make_spiral(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.lineWidth = line_width;
   ctx.beginPath()
-  _(num_lines / 2).times(function(line_index) {
+  _.times(num_lines / 2, function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
     ctx.lineTo(offset(), offset() - band_width - line_width)
     ctx.lineTo(offset(), max_y - offset())
@@ -301,7 +283,7 @@ function draw_everything(canvas, alwaysGlitch) {
     make_cross
   ]
 
-  shuffle(drawing_funcs)
+  shuffle(drawing_funcs);
 
   var inner_x = (squares_per_row * square_size) + (padding_between_squares * (squares_per_row - 1))
   var inner_y = (rows * square_size) + (padding_between_squares * (rows - 1))
