@@ -1,12 +1,8 @@
-// http://whitney.org/image_columns/0071/3484/frank-stella_jaspers-dilemma_1962_700.jpg?1446039574
-
-// brushes / textures
-// https://github.com/kangax/fabric.js
-// http://processingjs.org/
-// https://github.com/disjukr/croquis.js
-// http://www.tricedesigns.com/2012/01/04/sketching-with-html5-canvas-and-brush-images/
-// https://github.com/rhyolight/Harmony-Brushes
-// http://perfectionkills.com/exploring-canvas-drawing-techniques/
+/* TODO
+ * make the filling in actually work
+ * all the borders
+ * bring back the inner borders
+ */
 
 if (typeof module !== 'undefined' && module.exports) {
   var _ = require('underscore');
@@ -122,27 +118,34 @@ function createArray(length) {
     return arr;
 }
 
+function opposite_curve(c) { 
+  if (c == 'CTL') { return 'CBR'; } 
+  else if (c == 'CTR') { return 'CBL'; }
+  else if (c == 'CBR') { return 'CTL'; }
+  else if (c == 'CBL') { return 'CTR'; }
+}
+
+function vertical_mirror_curve(c) { 
+  if (c == 'CTL') { return 'CTR'; } 
+  else if (c == 'CTR') { return 'CTL'; }
+  else if (c == 'CBR') { return 'CBL'; }
+  else if (c == 'CBL') { return 'CBR'; }
+}
+
+function horizontal_mirror_curve(c) { 
+  if (c == 'CTL') { return 'CBL'; } 
+  else if (c == 'CTR') { return 'CBR'; }
+  else if (c == 'CBR') { return 'CTR'; }
+  else if (c == 'CBL') { return 'CTL'; }
+}
+
 function is_curve(entry) { return _.contains(['CTL', 'CTR', 'CBR', 'CBL'], entry); }
 
 function make_plan() {
-  var rows = 1;
+  var rows = 2;
   var cols = randInt(2, 5);
 
   var plan = createArray(rows, cols);
-
-  function opposite_curve(c) { 
-    if (c == 'CTL') { return 'CBR'; } 
-    else if (c == 'CTR') { return 'CBL'; }
-    else if (c == 'CBR') { return 'CTL'; }
-    else if (c == 'CBL') { return 'CTR'; }
-  }
-
-  function vertical_mirror_curve(c) { 
-    if (c == 'CTL') { return 'CTR'; } 
-    else if (c == 'CTR') { return 'CTL'; }
-    else if (c == 'CBR') { return 'CBL'; }
-    else if (c == 'CBL') { return 'CBR'; }
-  }
 
   for (row = 0; row < rows; row++) {
     var curves_in_row = 0;
@@ -235,33 +238,69 @@ function make_plan() {
 }
 
 function make_coloring_plan(plan) {
-  var fill_plan = createArray(plan.length, plan[0].length);
+  function fill_in_missing_coloring_plan(entry, colors, orientation) {
+    if (!entry) {
+      return false;
+    }
 
+    if (!entry.top) {
+      entry.top = new Object();
+      entry.top.orientation = orientation;
+      entry.top.colors = colors;
+      return true;
+    }
+    if (!entry.bottom && !is_curve(entry.shape)) {
+      entry.bottom = new Object();
+      entry.bottom.orientation = orientation;
+      entry.bottom.colors = colors;
+      return true;
+    }
+
+    return false;
+  }
+
+  var fill_plan = createArray(plan.length, plan[0].length);
   _.times(plan.length, function(row) {
     _.times(plan[row].length, function(col) {
-     if (fill_plan[row][col] == null) {
-        fill_plan[row][col] = new Object();
-      }
+      fill_plan[row][col] = new Object();
+    })
+  })
+
+  // first find all the curved pieces, fill those in, and the ones directly next to them
+  _.times(plan.length, function(row) {
+    _.times(plan[row].length, function(col) {
       plan_entry = plan[row][col];
       entry = fill_plan[row][col];
       if (is_curve(plan_entry)) {
         entry.top = new Object();
+        entry.shape = plan_entry
         entry.top.orientation = plan_entry;
         entry.top.colors = makeColors();
-      } else {
-        entry.top = new Object();
-        entry.top.orientation = 'CTL';
-        entry.top.colors = makeColors();
+
+        var put_down_other_half = false;
+        if (fill_plan[row+1]) {
+          put_down_other_half |= fill_in_missing_coloring_plan(fill_plan[row+1][col], entry.top.colors, horizontal_mirror_curve(entry.top.orientation))
+        }
+        if (fill_plan[row-1] && !put_down_other_half) {
+          put_down_other_half |= fill_in_missing_coloring_plan(fill_plan[row-1][col], entry.top.colors, horizontal_mirror_curve(entry.top.orientation))
+        }
+        if (!put_down_other_half) {
+          put_down_other_half |= fill_in_missing_coloring_plan(fill_plan[row][col+1], entry.top.colors, vertical_mirror_curve(entry.top.orientation))
+        }
+        if (!put_down_other_half) {
+          put_down_other_half |= fill_in_missing_coloring_plan(fill_plan[row][col-1], entry.top.colors, vertical_mirror_curve(entry.top.orientation))
+        }
       }
     })
   })
+
   console.log(fill_plan)
   return fill_plan;
 }
 
-function draw_circles(ctx, colors, radius, band_width, padding) {
+function draw_circles(ctx, colors, radius, band_width, border_size, padding) {
   var radiiAndColors = []
-  var currentRadius = radius
+  var currentRadius = radius - border_size*1.5
   var currentColorIndex = 0
 
   while (currentRadius > 0) {
@@ -281,16 +320,16 @@ function draw_circles(ctx, colors, radius, band_width, padding) {
     var radius = radiusAndColor[0]
     var color = radiusAndColor[1]
     // console.log('drawing circle ' + index + ' with color ' + color + ' & radius: ' + radius)
-    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
     ctx.beginPath();
-    ctx.moveTo(0, 0)
-    ctx.arc(padding,padding,radius-padding, 0,Math.PI / 2);
-    ctx.fill();
+    ctx.arc(0, 0, radius, 0, Math.PI / 2);
+    ctx.lineWidth = border_size;
+    ctx.stroke();
 
     ctx.strokeStyle = '#ffffff'
     ctx.lineWidth = padding;
     ctx.beginPath();
-    ctx.arc(padding, padding,radius-padding, 0,Math.PI / 2);
+    ctx.arc(0, 0, radius + border_size/2, 0, Math.PI / 2);
     ctx.stroke();
 
     radius -= band_width
@@ -306,11 +345,17 @@ function draw_square_border(ctx, size, border_size, color) {
   ctx.stroke();
   ctx.restore();
 
-  // ctx.beginPath()
-  // ctx.rect(border_size, border_size, size - border_size*2, size - border_size*2)
-  // ctx.strokeStyle = 'white'
-  // ctx.lineWidth = 1
-  // ctx.stroke();
+  ctx.beginPath()
+  ctx.rect(border_size, border_size, size - border_size*2, size - border_size*2)
+  ctx.strokeStyle = 'white'
+  ctx.lineWidth = 1
+  ctx.stroke();
+
+  ctx.beginPath()
+  ctx.rect(0, 0, size, size)
+  ctx.strokeStyle = 'white'
+  ctx.lineWidth = 1
+  ctx.stroke();
 }
 
 function reorient(ctx, size, orientation) {
@@ -331,32 +376,42 @@ function reorient(ctx, size, orientation) {
       break;
   }
 
-  // ctx.translate(size/ 2, size / 2)
-  // ctx.rotate(rotate * (Math.PI/180))
-  // ctx.translate(-size/2, -size/2)
+  ctx.translate(size/ 2, size / 2)
+  ctx.rotate(rotate * (Math.PI/180))
+  ctx.translate(-size/2, -size/2)
 
 }
 
 function draw_curved_border(ctx, size, border_size, border_color, orientation) {
   ctx.save()
   reorient(ctx, size, orientation)
-
-  // ctx.beginPath()
-  // ctx.moveTo(0, 0)
-  // ctx.arc(0, 0, size - border_size, 0, Math.PI / 2);
-  // ctx.lineTo(size, size)
-  // ctx.strokeStyle = '#ffffff'
-  // ctx.lineWidth = 2
-  // ctx.stroke();
-
   ctx.strokeStyle = border_color;
   ctx.lineWidth = border_size;
+
   ctx.beginPath()
-  ctx.moveTo(border_size/2, border_size/2)
+  ctx.moveTo(border_size / 2, size - border_size / 2)
+  ctx.lineTo(border_size/2, border_size/2)
   ctx.lineTo(size - border_size / 2, border_size / 2)
-  ctx.arc(border_size/2, border_size/2, size - border_size , 0, Math.PI / 2);
-  ctx.lineTo(border_size/2, 0)
   ctx.stroke();
+
+  ctx.beginPath()
+  ctx.arc(0, 0, size - border_size/2, 0, Math.PI / 2);
+  ctx.stroke();
+
+  ctx.beginPath()
+  ctx.moveTo(size - border_size, border_size)
+  ctx.lineTo(border_size, border_size) 
+  ctx.lineTo(border_size, size - border_size)
+  ctx.strokeStyle = '#ffffff'
+  ctx.lineWidth = 1
+  ctx.stroke();
+
+
+  ctx.beginPath()
+  ctx.lineWidth = 1
+  ctx.arc(0, 0, size - border_size, 0, Math.PI / 2);
+  ctx.stroke();
+
 
   ctx.restore();
 }
@@ -374,11 +429,10 @@ function render_cell({
 }) {
   function draw_coloring_plan_entry(coloring_plan_entry) {
     ctx.save()
-    if (!coloring_plan_entry) {
-      return;
+    if (coloring_plan_entry) {
+      reorient(ctx, pane_size, coloring_plan_entry.orientation)
+      draw_circles(ctx, coloring_plan_entry.colors, pane_size, arc_size, border_size, arc_border_size)
     }
-    // reorient(ctx, pane_size, coloring_plan_entry.orientation)
-    // draw_circles(ctx, coloring_plan_entry.colors, pane_size - border_size + 1, arc_size, arc_border_size)
     ctx.restore();
   }
 
@@ -432,12 +486,12 @@ function draw_everything(canvas, forceGlitch) {
 
   var pane_size = canvas_size / num_panes_per_row
 
-  var arc_size = pane_size * 0.12
-  var border_size = pane_size * 0.15
+  var arc_size = pane_size * 0.10
+  var border_size = pane_size * 0.10
   var arc_border_size = 1
 
   var plan = make_plan()
-  plan = [['CTL', 'CTL', 'CTL']]
+  // plan = [['CTL', 'SQ', 'SQ', 'CTR']]
   var coloring_plan = make_coloring_plan(plan)
   var min_x_index = _.min(_.map(plan, function(row) { return _.findIndex(row, function(e) { return e != null }) }))
   var max_x_index = _.max(_.map(plan, function(row) { return _.findLastIndex(row, function(e) { return e != null }) })) + 1
