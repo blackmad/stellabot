@@ -254,7 +254,8 @@ function draw_everything(canvas, alwaysGlitch) {
   var num_lines = randInt(5, 10) * 2;
   var num_bands = num_lines + 1
 
-  var squares_per_row = randInt(2, 20)
+  var min_square_size = 60
+  var squares_per_row = randInt(2, max_x / min_square_size)
   var rows = Math.max(1, Math.floor(squares_per_row * (max_y / max_x) * (randInt(60, 100)/100)))
   var total_squares = squares_per_row * rows
 

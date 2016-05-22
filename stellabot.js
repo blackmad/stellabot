@@ -9,13 +9,13 @@ var _ = require('underscore')
 var argv = require('minimist')(process.argv.slice(2));
 console.dir(argv);
 
-var max_x = 1024;
-var max_y = 512;
+var max_x = 506;
+var max_y = 253;
 var canvas = new Canvas(max_x, max_y);
 
 var draw_modules = [
   require('./benjamin_moore'),
-  require('./jaspers_dilemma'),
+  require('./jaspers_dilemma')
 ]
 
 var draw_module = _.sample(draw_modules);
