@@ -20,10 +20,8 @@ function resize_canvas(){
   canvas.width  = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  var forceGlitch = params['glitch'] === 'yes';
   var allParams = params;
   allParams['canvas'] = canvas;
-  allParams['forceGlitch'] = forceGlitch;
   draw_everything(allParams);
 
   if (redrawTimeout) {

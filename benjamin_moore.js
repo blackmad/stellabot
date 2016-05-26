@@ -236,14 +236,14 @@ function make_spiral(ctx, max_x, max_y, line_width, band_width, bg_color, fg_col
 
 function draw_everything({
   canvas = this.canvas,
-  alwaysGlitch = this.alwaysGlitch,
+  always_glitch = this.always_glitch,
   min_square_size = this.min_square_size
 }) {
   if (Math.random() < 0.6) {
     initColors();
   }
 
-  shouldGlitchAtAll = alwaysGlitch || Math.random() < 0.1;
+  shouldGlitchAtAll = always_glitch || Math.random() < 0.1;
 
   var ctx = canvas.getContext('2d');
   ctx.save();
