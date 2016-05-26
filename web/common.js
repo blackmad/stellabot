@@ -21,7 +21,10 @@ function resize_canvas(){
   canvas.height = window.innerHeight;
 
   var forceGlitch = params['glitch'] === 'yes';
-  draw_everything(canvas, forceGlitch);
+  var allParams = params;
+  allParams['canvas'] = canvas;
+  allParams['forceGlitch'] = forceGlitch;
+  draw_everything(allParams);
 
   if (redrawTimeout) {
    setTimeout(resize_canvas, redrawTimeout);

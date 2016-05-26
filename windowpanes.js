@@ -506,7 +506,10 @@ function render_cell({
 }
 
 
-function draw_everything(canvas, forceGlitch) {
+function draw_everything({
+  canvas = this.canvas,
+  alwaysGlitch = this.alwaysGlitch
+}) {
   // var seed = new Date().getTime()
   // var seed = 100
   // Math.random = Math.seed(seed)

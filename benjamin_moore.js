@@ -234,7 +234,11 @@ function make_spiral(ctx, max_x, max_y, line_width, band_width, bg_color, fg_col
   ctx.stroke();
 }
 
-function draw_everything(canvas, alwaysGlitch) {
+function draw_everything({
+  canvas = this.canvas,
+  alwaysGlitch = this.alwaysGlitch,
+  min_square_size = this.min_square_size
+}) {
   if (Math.random() < 0.6) {
     initColors();
   }
@@ -258,7 +262,7 @@ function draw_everything(canvas, alwaysGlitch) {
   var num_lines = randInt(5, 10) * 2;
   var num_bands = num_lines + 1
 
-  var min_square_size = 60
+  min_square_size = min_square_size || 60;
   var cols = randInt(2, max_x / min_square_size)
   var rows = Math.max(1, Math.floor(cols * (max_y / max_x) * (randInt(60, 100)/100)))
   var total_squares = cols * rows

@@ -142,7 +142,10 @@ function draw_it(ctx, max_x, band_width, padding) {
   make_trapezoid(ctx, max_x, band_width / 2)
 }
 
-function draw_everything(canvas, forceGlitch) {
+function draw_everything({
+  canvas = this.canvas,
+  alwaysGlitch = this.alwaysGlitch
+}) {
   initColors();
 
   var ctx = canvas.getContext('2d');
