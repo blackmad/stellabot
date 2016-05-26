@@ -139,7 +139,76 @@ function horizontal_mirror_curve(c) {
   else if (c == 'CBL') { return 'CTL'; }
 }
 
+function is_vertically_connected(top, bottom) {
+  return 
+    _.contains(['SQ', 'CTL', 'CTR'], top) &&
+    _.contains(['SQ', 'CBR', 'CTR'], bottom);
+}
+
 function is_curve(entry) { return _.contains(['CTL', 'CTR', 'CBR', 'CBL'], entry); }
+
+
+function make_row({ 
+  row_index = this.row_index,
+  cols = this.cols,
+  plan = this.plan
+}) {
+  var row = createArray(cols);
+
+  var curves_in_row = 0;
+  var starting_curve = null;
+  var cells_in_row = 0;
+
+  _.times(cols, function(col_index) {
+    var entry = null;
+
+    if (curves_in_row == 2) {
+      entry = null;
+    } else if (curves_in_row == 0) {
+      if (row_index == 0) {
+        entry = _.sample(['CTL', 'CBL', 'SQ', null])
+      } else {
+        if (plan[row_index-1][col_index] == 'CBL') {
+          entry = _.sample(['CTL', null]) 
+        } else {
+          entry = _.sample(['CBL', 'SQ', null])
+        }
+      }
+    } else if (curves_in_row == 1) {
+      var possibilities = ['SQ']
+      if (starting_curve) {
+
+        /* /CTL CTR\
+           \CBL CBR/
+        */
+        if (cells_in_row % 2 == 0) {
+          console.log('appending opposite curve of ' + starting_curve + ': ' + opposite_curve(starting_curve))
+          possibilities.push(opposite_curve(starting_curve))
+
+        } else {
+          console.log('appending mirror curve of ' + starting_curve + ': ' + vertical_mirror_curve(starting_curve))
+          possibilities.push(vertical_mirror_curve(starting_curve))
+        }
+      }
+
+      entry = _.sample(possibilities)
+    }
+
+    if (entry != null) {
+      cells_in_row += 1
+      if (curves_in_row == 0 || is_curve(entry)) {
+        curves_in_row += 1;
+      }
+      if (!starting_curve && is_curve(entry)) {
+        starting_curve = entry;
+      }
+    }
+    console.log("adding " + entry + " now have curves in row " + curves_in_row + " starting with " + starting_curve)
+    row[col_index] = entry
+  });
+
+  return row;
+}
 
 function make_plan() {
   var rows = 2;
@@ -147,59 +216,26 @@ function make_plan() {
 
   var plan = createArray(rows, cols);
 
-  for (row = 0; row < rows; row++) {
-    var curves_in_row = 0;
-    var starting_curve = null;
-    var cells_in_row = 0;
+  _.times(rows, function(row_index) {
+    var make_row_attempts_left = 10;
+    var new_row = null;
+    var has_connection = false;
 
-    for (col = 0; col < cols; col++) {
-      var entry = null;
-
-      if (curves_in_row == 2) {
-        entry = null;
-      } else if (curves_in_row == 0) {
-        if (row == 0) {
-          entry = _.sample(['CTL', 'CBL', 'SQ', null])
-        } else {
-          if (plan[row-1][col] == 'CBL') {
-            entry = _.sample(['CTL', null]) 
-          } else {
-            entry = _.sample(['CBL', 'SQ', null])
-          }
-        }
-      } else if (curves_in_row == 1) {
-        var possibilities = ['SQ']
-        if (starting_curve) {
-
-          /* /CTL CTR\
-             \CBL CBR/
-          */
-          if (cells_in_row % 2 == 0) {
-            console.log('appending opposite curve of ' + starting_curve + ': ' + opposite_curve(starting_curve))
-            possibilities.push(opposite_curve(starting_curve))
-
-          } else {
-            console.log('appending mirror curve of ' + starting_curve + ': ' + vertical_mirror_curve(starting_curve))
-            possibilities.push(vertical_mirror_curve(starting_curve))
-          }
-        }
-
-        entry = _.sample(possibilities)
+    while (make_row_attempts_left > 0 && !has_connection) {
+      new_row = make_row({'cols': cols, 'row_index': row_index, 'plan': plan})
+      if (row_index > 0) {
+        has_connection = _.find(new_row, function(new_entry, col_index) {
+          return is_vertically_connected(plan[row_index-1][col_index], new_entry)
+        })
+      } else {
+        has_connection = true;
       }
-
-      if (entry != null) {
-        cells_in_row += 1
-        if (curves_in_row == 0 || is_curve(entry)) {
-          curves_in_row += 1;
-        }
-        if (!starting_curve && is_curve(entry)) {
-          starting_curve = entry;
-        }
-      }
-      console.log("adding " + entry + " now have curves in row " + curves_in_row + " starting with " + starting_curve)
-      plan[row][col] = entry
+      make_row_attempts_left -= 1;
+      console.log('have ' + make_row_attempts_left + ' ' + 'row connection attempts left')
     }
-  }
+
+    plan[row_index] = new_row
+  })
 
   var drawn_plan = _.map(plan, function(row) {
     return _.map(row, function(entry) {
@@ -383,6 +419,8 @@ function reorient(ctx, size, orientation) {
 }
 
 function draw_curved_border(ctx, size, border_size, border_color, orientation) {
+  var inner_line_width = 1
+
   ctx.save()
   reorient(ctx, size, orientation)
   ctx.strokeStyle = border_color;
@@ -399,19 +437,24 @@ function draw_curved_border(ctx, size, border_size, border_color, orientation) {
   ctx.stroke();
 
   ctx.beginPath()
-  ctx.moveTo(size - border_size, border_size)
+  ctx.moveTo(size - border_size - inner_line_width*2, border_size)
   ctx.lineTo(border_size, border_size) 
-  ctx.lineTo(border_size, size - border_size)
+  ctx.lineTo(border_size, size - border_size - inner_line_width*2)
   ctx.strokeStyle = '#ffffff'
-  ctx.lineWidth = 1
+  ctx.lineWidth = inner_line_width
   ctx.stroke();
 
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(border_size, border_size, size - border_size, size - border_size)
+  ctx.clip();
 
   ctx.beginPath()
   ctx.lineWidth = 1
   ctx.arc(0, 0, size - border_size, 0, Math.PI / 2);
   ctx.stroke();
 
+  ctx.restore();
 
   ctx.restore();
 }

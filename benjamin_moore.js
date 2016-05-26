@@ -235,6 +235,10 @@ function make_spiral(ctx, max_x, max_y, line_width, band_width, bg_color, fg_col
 }
 
 function draw_everything(canvas, alwaysGlitch) {
+  if (Math.random() < 0.6) {
+    initColors();
+  }
+
   shouldGlitchAtAll = alwaysGlitch || Math.random() < 0.1;
 
   var ctx = canvas.getContext('2d');
@@ -255,17 +259,17 @@ function draw_everything(canvas, alwaysGlitch) {
   var num_bands = num_lines + 1
 
   var min_square_size = 60
-  var squares_per_row = randInt(2, max_x / min_square_size)
-  var rows = Math.max(1, Math.floor(squares_per_row * (max_y / max_x) * (randInt(60, 100)/100)))
-  var total_squares = squares_per_row * rows
+  var cols = randInt(2, max_x / min_square_size)
+  var rows = Math.max(1, Math.floor(cols * (max_y / max_x) * (randInt(60, 100)/100)))
+  var total_squares = cols * rows
 
-  console.log((max_x / squares_per_row))
+  console.log((max_x / cols))
   console.log((max_y / rows))
   console.log('rows: ' + rows)
-  console.log('cols: ' + squares_per_row)
+  console.log('cols: ' + cols)
 
   var square_size = Math.min(
-    (max_x / squares_per_row),
+    (max_x / cols),
     (max_y / rows)
   ) * (randInt(60, 90)/100)
 
@@ -296,7 +300,7 @@ function draw_everything(canvas, alwaysGlitch) {
 
   shuffle(drawing_funcs)
 
-  var inner_x = (squares_per_row * square_size) + (padding_between_squares * (squares_per_row - 1))
+  var inner_x = (cols * square_size) + (padding_between_squares * (cols - 1))
   var inner_y = (rows * square_size) + (padding_between_squares * (rows - 1))
 
   ctx.translate(
@@ -304,11 +308,11 @@ function draw_everything(canvas, alwaysGlitch) {
     (max_y - inner_y) / 2
   )
 
-  _(rows*squares_per_row).times(function(index) {
-    var y_index = Math.floor(index / squares_per_row)
+  _(rows*cols).times(function(index) {
+    var y_index = Math.floor(index / cols)
     var y_offset = (y_index * square_size) + (y_index * padding_between_squares)
 
-    var x_index = index % squares_per_row
+    var x_index = index % cols
     var x_offset = (x_index * square_size) + (x_index * padding_between_squares)
 
     ctx.save()
