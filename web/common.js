@@ -23,13 +23,9 @@ function resize_canvas(){
   var allParams = params;
   allParams['canvas'] = canvas;
   draw_everything(allParams);
-
-  if (redrawTimeout) {
-   setTimeout(resize_canvas, redrawTimeout);
-  }
 }
 
-$(document).ready(function() {
+$(window).load(function() {
   var html = '<input type="button" class="redraw btn" id="redraw" value="redraw"/>' +
     '<canvas id="myCanvas" width="100%" height="100%" style="border:1px solid #000000;"/>'
 
@@ -45,6 +41,10 @@ $(document).ready(function() {
 
   $(window).on("resize", resize_canvas);
   $('#redraw').on("click", resize_canvas);
+
+  if (redrawTimeout) {
+   setInterval(resize_canvas, redrawTimeout);
+  }
 
   resize_canvas();
 });

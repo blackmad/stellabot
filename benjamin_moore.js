@@ -125,11 +125,11 @@ function make_corners(ctx, max_x, max_y, line_width, band_width, bg_color, fg_co
   ctx.clip();
   _(num_lines).times(function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
-    ctx.beginPath()
-    ctx.moveTo(offset(), 0)
-    ctx.lineTo(offset(), max_y - offset())
-    ctx.lineTo(max_x, max_y - offset());
-    ctx.stroke();
+    draw_noisy_shape(ctx,
+      [offset(), 0],
+      [offset(), max_y - offset()],
+      [max_x, max_y - offset()]
+    )
   })
 }
 
@@ -146,11 +146,7 @@ function make_lines(ctx, max_x, max_y, line_width, band_width, bg_color, fg_colo
   ctx.lineWidth = line_width;
   _(num_lines).times(function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
-    ctx.beginPath()
-    ctx.moveTo(offset(), 0)
-    ctx.lineTo(offset(), max_y);
-    ctx.stroke();
-
+    draw_noisy_line(ctx, offset(), 0, offset(), max_y)
   })
 }
 
@@ -159,10 +155,7 @@ function make_slants(ctx, max_x, max_y, line_width, band_width, bg_color, fg_col
   ctx.lineWidth = line_width;
   _(num_lines * 3).times(function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
-    ctx.beginPath()
-    ctx.moveTo(offset() - 15, -15)
-    ctx.lineTo(0 - 15, offset() - 15)
-    ctx.stroke();
+    draw_noisy_line(ctx, offset() - 15, -15, 0 - 15, offset() - 15)
   })
 }
 
@@ -263,8 +256,8 @@ function draw_everything({
   var num_bands = num_lines + 1
 
   min_square_size = min_square_size || 60;
-  var cols = randInt(2, max_x / min_square_size)
-  var rows = Math.max(1, Math.floor(cols * (max_y / max_x) * (randInt(60, 100)/100)))
+  var cols = 1
+  var rows = 1
   var total_squares = cols * rows
 
   console.log((max_x / cols))
@@ -286,20 +279,9 @@ function draw_everything({
   // TODO: make this very clean integers the whole way
   var band_to_line_width_multiplier = randInt(2, 5);
 
-  // draw lines
-  /*
-  (num_lines * line_width) + ((num_lines + 1) * band_width) = max_x
-  (num_lines * line_width) + ((num_lines + 1) * (line_width*band_to_line_width_multiplier) = max_x
-  num_lines*line_width + num_lines*line_width*band_to_line_width_multiplier + line_width*band_to_line_width_multiplier = max_x
-  line_width(num_lines + num_lines*multiplier + multiplier) = max_x
-  line_width = max_x / (num_lines + num_lines*multiplier + multiplier)
-  */
-
   var drawing_funcs = [
-    make_corners, make_squares, make_lines, 
-    make_slants, 
-    make_spiral,
-    make_cross
+    // make_lines, make_slants, make_corners
+    make_corners
   ]
 
   shuffle(drawing_funcs)
