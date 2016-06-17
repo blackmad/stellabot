@@ -1,6 +1,9 @@
 if (typeof module !== 'undefined' && module.exports) {
   var _ = require('underscore');
   var tinycolor = require("tinycolor2");
+  var noise = require("./noise");
+  var draw_noisy_shape = noise.draw_noisy_shape;
+  var draw_noisy_line = noise.draw_noisy_line;
 
   module.exports = {
     draw_everything: draw_everything,

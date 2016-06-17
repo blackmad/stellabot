@@ -7,7 +7,7 @@ var max_y = 512;
 var canvas = new Canvas(max_x, max_y);
 
 var benjamin_moore = require('./benjamin_moore');
-benjamin_moore.draw_everything(canvas);
+benjamin_moore.draw_everything({canvas: canvas});
 
 var out = fs.createWriteStream(__dirname + '/benjamin_moore.png')
   , stream = canvas.createPNGStream();

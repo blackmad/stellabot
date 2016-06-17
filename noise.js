@@ -1,3 +1,8 @@
+module.exports = {
+  draw_noisy_shape: draw_noisy_shape,
+  draw_noisy_line: draw_noisy_line
+};
+
 var Simple1DNoise = function() {
     var MAX_VERTICES = 256;
     var MAX_VERTICES_MASK = MAX_VERTICES -1;
