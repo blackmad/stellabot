@@ -54,18 +54,38 @@ var Simple1DNoise = function() {
 };
 
 function draw_noisy_shape(context) {
-  var points = Array.prototype.slice.call(arguments, 1);
 
-  context.beginPath();
+  var points = Array.prototype.slice.call(arguments, 1);
+  var origLineWidth = context.lineWidth
+  context.lineWidth = origLineWidth*0.80;
+  draw_clean_shape(context, points)
+  context.lineWidth = origLineWidth
+
   var lastPoint = points.shift();
-  context.moveTo(lastPoint[0], lastPoint[1])
+  console.log(points)
   points.forEach(function(point) {
-    context.moveTo(point[0], point[1])
+    context.beginPath();
     draw_noisy_line_helper(context, lastPoint[0], lastPoint[1], point[0], point[1])
     lastPoint = point;
+    context.stroke();
   })
-  context.stroke();
+
+
 }
+
+function draw_clean_shape(context, points) {
+  // var points = Array.prototype.slice.call(arguments, 1);
+
+  context.beginPath();
+  var firstPoint = points[0]
+  var restPoints = Array.prototype.slice.call(points, 1);
+  context.moveTo(firstPoint[0], firstPoint[1])
+  restPoints.forEach(function(point) {
+    context.lineTo(point[0], point[1])
+  });
+  context.stroke()
+}
+
 
 function draw_noisy_line(context, x0, y0, x1, y1) {
   context.beginPath();
