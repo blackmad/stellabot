@@ -1,8 +1,12 @@
+// TODO
+// fix squares in clean mode
+
 if (typeof module !== 'undefined' && module.exports) {
   var _ = require('underscore');
   var tinycolor = require("tinycolor2");
   var noise = require("./noise");
   var draw_noisy_shape = noise.draw_noisy_shape;
+  var draw_clean_shape = noise.draw_clean_shape;
   var draw_noisy_line = noise.draw_noisy_line;
 
   module.exports = {
@@ -55,7 +59,6 @@ function initColors() {
     _.times(100, function() { return tinycolor(getRndColor()); })
   ]
   colors = _.sample(colorOptions)
-  //colors = 
 
   var colorFunctions = ['lighten', 'darken', 'brighten', 'saturate', 'desaturate']
   var colorFunction = _.sample(colorFunctions)
@@ -96,6 +99,7 @@ function make_shape_helper(ctx, num_lines, band_to_line_width_multiplier, max_x,
   ctx.strokeStyle = fg_color
 
   var line_width = max_x*1.0 / (num_lines + num_lines*band_to_line_width_multiplier + band_to_line_width_multiplier)
+  console.log('line width: ' + line_width)
   var band_width = line_width * band_to_line_width_multiplier
 
   ctx.save();
@@ -128,7 +132,7 @@ function make_corners(ctx, max_x, max_y, line_width, band_width, bg_color, fg_co
   ctx.clip();
   _(num_lines).times(function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
-    draw_noisy_shape(ctx,
+    draw_noisy_line(ctx,
       [offset(), 0],
       [offset(), max_y - offset()],
       [max_x, max_y - offset()]
@@ -141,7 +145,13 @@ function make_squares(ctx, max_x, max_y, line_width, band_width, bg_color, fg_co
   // num_lines must be even
   _(num_lines / 2).times(function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
-    ctx.strokeRect(offset(), offset(), max_x - 2*offset(), max_y - 2*offset());
+    draw_noisy_shape(ctx,
+      [offset(), offset()],
+      [offset(), max_y - offset()],
+      [max_x - offset(), max_y - offset()],
+      [max_x - offset(), offset()],
+      [offset(), offset()]
+    )
   })
 }
 
@@ -149,7 +159,7 @@ function make_lines(ctx, max_x, max_y, line_width, band_width, bg_color, fg_colo
   ctx.lineWidth = line_width;
   _(num_lines).times(function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
-    draw_noisy_line(ctx, offset(), 0, offset(), max_y)
+    draw_noisy_line(ctx, [offset(), 0], [offset(), max_y])
   })
 }
 
@@ -158,12 +168,8 @@ function make_slants(ctx, max_x, max_y, line_width, band_width, bg_color, fg_col
   ctx.lineWidth = line_width;
   _(num_lines * 3).times(function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
-    draw_noisy_line(ctx, offset() - 15, -15, 0 - 15, offset() - 15)
+    draw_noisy_line(ctx, [offset() - 15, -15], [0 - 15, offset() - 15])
   })
-}
-
-function rotate90(ctx) {
-
 }
 
 function make_cross(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
@@ -177,11 +183,11 @@ function make_cross(ctx, max_x, max_y, line_width, band_width, bg_color, fg_colo
     _(num_lines / 2 ).times(function(line_index) {
       line_index = num_lines - line_index
       var offset = calculateOffset(line_index, line_width, band_width)
-      ctx.beginPath()
-      ctx.moveTo(offset(), 0)
-      ctx.lineTo(offset(), max_y - offset())
-      ctx.lineTo(max_x, max_y - offset());
-      ctx.stroke();
+      draw_noisy_line(ctx, 
+        [offset(), 0],
+        [offset(), max_y - offset()],
+        [max_x, max_y - offset()]
+      )
     })
   }
 
@@ -205,29 +211,22 @@ function make_cross(ctx, max_x, max_y, line_width, band_width, bg_color, fg_colo
   draw_quarter();
   ctx.restore()
 
-  ctx.beginPath()
-  ctx.moveTo(max_x / 2, 0)
-  ctx.lineTo(max_x / 2, max_y)
-  ctx.stroke();
-
-  ctx.beginPath()
-  ctx.moveTo(0, max_y / 2)
-  ctx.lineTo(max_x, max_y / 2)
-  ctx.stroke();
+  draw_noisy_line(ctx, [max_x / 2, 0], [max_x / 2, max_y])
+  draw_noisy_line(ctx, [0, max_y /2], [max_x, max_y / 2])
 }
 
 function make_spiral(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
   ctx.lineWidth = line_width;
-  ctx.beginPath()
+  points = []
   _(num_lines / 2).times(function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
-    ctx.lineTo(offset(), offset() - band_width - line_width)
-    ctx.lineTo(offset(), max_y - offset())
-    ctx.lineTo(max_x - offset(), max_y - offset());
-    ctx.lineTo(max_x - offset(), offset());
-    ctx.lineTo(offset() + band_width + line_width, offset())
+    points.push([offset(), offset() - band_width - line_width])
+    points.push([offset(), max_y - offset()])
+    points.push([max_x - offset(), max_y - offset()])
+    points.push([max_x - offset(), offset()])
+    points.push([offset() + band_width + line_width, offset()])
   })
-  ctx.stroke();
+  draw_noisy_line(ctx, points)
 }
 
 function draw_everything({
@@ -237,6 +236,10 @@ function draw_everything({
 }) {
   if (Math.random() < 0.6) {
     initColors();
+  }
+  if (Math.random() < 0.99) {
+    // draw_noisy_shape = draw_clean_shape
+    console.log('everything should be clean now')
   }
 
   shouldGlitchAtAll = always_glitch || Math.random() < 0.1;
@@ -258,9 +261,14 @@ function draw_everything({
   var num_lines = randInt(5, 10) * 2;
   var num_bands = num_lines + 1
 
-  min_square_size = min_square_size || 60;
-  var cols = 1
-  var rows = 1
+  min_square_size = min_square_size || 150;
+  console.log('min square size: ' + min_square_size)
+  var max_cols = max_x / min_square_size
+  console.log('max cols: ' + max_cols)
+  var cols = randInt(2, max_cols)
+  console.log('cols: ' + cols)
+  var rows = Math.max(1, Math.floor(cols * (max_y / max_x) * (randInt(60, 100)/100)))
+
   var total_squares = cols * rows
 
   console.log((max_x / cols))
@@ -283,9 +291,10 @@ function draw_everything({
   var band_to_line_width_multiplier = randInt(2, 5);
 
   var drawing_funcs = [
-    // make_lines, make_slants, make_corners
-    make_corners
+    make_lines, make_slants, make_corners,
+    make_squares, make_cross, make_spiral
   ]
+
 
   shuffle(drawing_funcs)
 

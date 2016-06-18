@@ -1,6 +1,14 @@
+/* other ideas
+http://jsfiddle.net/95tft/
+http://perfectionkills.com/exploring-canvas-drawing-techniques/#pen-2
+
+antialiased thick line: http://members.chello.at/~easyfilter/bresenham.html
+*/
+
 module.exports = {
   draw_noisy_shape: draw_noisy_shape,
-  draw_noisy_line: draw_noisy_line
+  draw_noisy_line: draw_noisy_line,
+  draw_clean_shape: draw_clean_shape
 };
 
 var Simple1DNoise = function() {
@@ -54,43 +62,86 @@ var Simple1DNoise = function() {
 };
 
 function draw_noisy_shape(context) {
-
   var points = Array.prototype.slice.call(arguments, 1);
+  draw_noisy_shape_helper({
+    context: context,
+    points: points,
+    closed: true
+  })
+}
+
+function draw_noisy_line(context) {
+  var points = Array.prototype.slice.call(arguments, 1);
+  draw_noisy_shape_helper({
+    context: context,
+    points: points,
+    closed: false
+  })
+}
+
+function draw_noisy_shape_helper(params) {
+  var context = params.context;
+  var points = params.points;
+  var closed = params.closed;
+
+  // if was passed like f(x, [p0, p1], [p2, p3])
+  // then points will be an array of arrays
+  // if was passed like f(x, [[p0, p1], [p2, p3]])
+  // then points will be array of array of arrays?
+
+  if (Array.isArray(points[0]) && Array.isArray(points[0][0])) {
+    points = points[0]
+  }
+
   var origLineWidth = context.lineWidth
-  context.lineWidth = origLineWidth*0.80;
-  draw_clean_shape(context, points)
+  context.lineWidth = origLineWidth*0.9;
+  draw_clean_shape_helper(params)
   context.lineWidth = origLineWidth
 
   var lastPoint = points.shift();
-  console.log(points)
   points.forEach(function(point) {
     context.beginPath();
     draw_noisy_line_helper(context, lastPoint[0], lastPoint[1], point[0], point[1])
     lastPoint = point;
     context.stroke();
   })
-
-
 }
 
-function draw_clean_shape(context, points) {
-  // var points = Array.prototype.slice.call(arguments, 1);
+function draw_clean_shape(context) {
+  var points = Array.prototype.slice.call(arguments, 1);
+  draw_clean_shape_helper({
+    context: context,
+    points: points,
+    closed: true
+  })
+}
+
+function draw_clean_shape_helper(params) {
+  var context = params.context;
+  var points = params.points;
+  var closed = params.closed;
+
+  if (Array.isArray(points[0]) && Array.isArray(points[0][0])) {
+    points = points[0]
+  }
 
   context.beginPath();
   var firstPoint = points[0]
   var restPoints = Array.prototype.slice.call(points, 1);
   context.moveTo(firstPoint[0], firstPoint[1])
-  restPoints.forEach(function(point) {
+  points.forEach(function(point) {
     context.lineTo(point[0], point[1])
   });
   context.stroke()
-}
 
-
-function draw_noisy_line(context, x0, y0, x1, y1) {
-  context.beginPath();
-  draw_noisy_line_helper(context, x0, y0, x1, y1);
-  context.stroke();
+  // closed shape, need to overdraw for dumb reasons
+  if (closed) {
+    console.log('we should overdraw')
+    points.forEach(function(point) {
+      context.lineTo(point[0], point[1])
+    });
+    context.stroke()
+  }
 }
 
 function draw_noisy_line_helper(context, x0, y0, x1, y1) {
@@ -105,6 +156,14 @@ function draw_noisy_line_helper(context, x0, y0, x1, y1) {
   dx = (dx < 0) ? -dx : dx;
   dy = (dy < 0) ? -dy : dy;
 
+  function drawPoint(i, x, x0, y, y0) {
+    // for a line width of 7 we want the range to be +/- 0.5
+    // var noiseRange = context.lineWidth*1.0 / 7
+    var noiseRange = 1
+    var noise = (generator.getVal(i)*noiseRange) - (noiseRange/2)
+    context.lineTo(x + x0 + noise, y + y0 + noise);
+  }
+
   if (dx >= dy) {
     var d = 2*dy - dx
     var delta_A = 2*dy
@@ -113,7 +172,7 @@ function draw_noisy_line_helper(context, x0, y0, x1, y1) {
     var x = 0;
     var y = 0;
     for (i=0; i<=dx; i++) {
-      context.lineTo(x + x0 + generator.getVal(i)-0.5, y + y0 + generator.getVal(i)-0.5);
+      drawPoint(i, x, x0, y, y0)
       if (d > 0) {
         d += delta_B;
         x += inc_x;
@@ -133,7 +192,7 @@ function draw_noisy_line_helper(context, x0, y0, x1, y1) {
     var x = 0;
     var y = 0;
     for (i=0; i<=dy; i++) {
-      context.lineTo(x + x0 + generator.getVal(i)-0.5, y + y0 + generator.getVal(i)-0.5);
+      drawPoint(i, x, x0, y, y0)
       if (d > 0) {
         d += delta_B;
         x += inc_x;
