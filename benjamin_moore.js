@@ -229,11 +229,11 @@ function make_spiral(ctx, max_x, max_y, line_width, band_width, bg_color, fg_col
   draw_noisy_line(ctx, points)
 }
 
-function draw_everything({
-  canvas = this.canvas,
-  always_glitch = this.always_glitch,
-  min_square_size = this.min_square_size
-}) {
+function draw_everything(params) {
+  var canvas = params.canvas
+  var always_glitch = params.always_glitch
+  var min_square_size = params.min_square_size
+
   if (Math.random() < 0.6) {
     initColors();
   }
