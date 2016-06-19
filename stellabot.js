@@ -19,7 +19,10 @@ var draw_modules = [
 ]
 
 var draw_module = _.sample(draw_modules);
-draw_module.draw_everything(canvas, argv['glitch'] || false);
+draw_module.draw_everything({
+  canvas: canvas, 
+  alwaysGlitch: argv['glitch'] || false
+});
 
 Math.seed = function(s) {
   return function() {

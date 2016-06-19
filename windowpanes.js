@@ -7,123 +7,23 @@
 if (typeof module !== 'undefined' && module.exports) {
   var _ = require('underscore');
   var tinycolor = require("tinycolor2");
+  var Utils = require("./utils").Utils
+  var ColoringPlanEntry = require('./windowpanes_plan').ColoringPlanEntry;
+  var Colors = require('./colors').Colors;
   module.exports = {
     draw_everything: draw_everything,
     title: 'Windowpanes'
   }
 }
 
+var randInt = Utils.randInt
+var getRndColor = Utils.getRndColor
+
 Math.seed = function(s) {
   return function() {
     s = Math.sin(s) * 10000; return s - Math.floor(s);
   };
 };
-
-function shuffle(array) {
-  var currentIndex = array.length, temporaryValue, randomIndex;
-
-  // While there remain elements to shuffle...
-  while (0 !== currentIndex) {
-
-    // Pick a remaining element...
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex -= 1;
-
-    // And swap it with the current element.
-    temporaryValue = array[currentIndex];
-    array[currentIndex] = array[randomIndex];
-    array[randomIndex] = temporaryValue;
-  }
-
-  return array;
-}
-
-
-function getRndColor() {
-  return makeColors()[0];
-    var r = 255*Math.random()|0,
-        g = 255*Math.random()|0,
-        b = 255*Math.random()|0;
-    return 'rgb(' + r + ',' + g + ',' + b + ')';
-}
-
-function randInt (low, high) {
-    return Math.floor(Math.random() * (high - low) + low);
-}
-
-var colors = null;
-var colorIndex = null;
-
-var l = randInt(10, 100)
-function makeColors() {
-  if (l === null || l === undefined) {
-    l = randInt(10, 100)
-  }
-  // return  tinycolor(getRndColor()).analogous(slices = 400, results = 5).map(function(t) { return t.toHexString(); });
-  return _.times(10, function() {
-    //return tinycolor({ h: randInt(0, 100), s: randInt(0, 100), l: 50 })
-    return tinycolor({ h: randInt(0, 100), s: randInt(0, 100), l: l })
-  })
-}
-
-function initColors() {
-  colorOptions = [
-    tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
-    tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
-    tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
-    tinycolor(getRndColor()).analogous(slices = randInt(10, 100), results = randInt(4, 40)),
-  ]
-  colors = _.sample(colorOptions)
-  //colors = _.times(7, function() { return getRndColor(); })
-
-  var colorFunctions = ['lighten'] // , 'darken', 'brighten', 'saturate', 'desaturate']
-  var colorFunction = _.sample(colorFunctions)
-  colors = colors.map(function(c) { return c.lighten(20); });
-  colors = colors.map(function(t) { return t.toHexString(); });
-
-  colorIndex = 0;
-}
-
-function maybeInitColors() {
-  // please remove this awful globals hack
-  if (colors === null) {
-    initColors()
-  }
-}
-
-function getNextColor() {
-  maybeInitColors();
-
-  var c = colors[colorIndex % colors.length];
-  colorIndex+=1;
-  return c;
-}
-
-function getNextColorNoAdvance() {
-  maybeInitColors();
-
-  var c = colors[colorIndex % colors.length];
-  return c;
-}
-
-function createArray(length) {
-    var arr = new Array(length || 0),
-        i = length;
-
-    if (arguments.length > 1) {
-        var args = Array.prototype.slice.call(arguments, 1);
-        while(i--) arr[length-1 - i] = createArray.apply(this, args);
-    }
-
-    return arr;
-}
-
-function opposite_curve(c) { 
-  if (c == 'CTL') { return 'CBR'; } 
-  else if (c == 'CTR') { return 'CBL'; }
-  else if (c == 'CBR') { return 'CTL'; }
-  else if (c == 'CBL') { return 'CTR'; }
-}
 
 function vertical_mirror_curve(c) { 
   if (c == 'CTL') { return 'CTR'; } 
@@ -139,21 +39,23 @@ function horizontal_mirror_curve(c) {
   else if (c == 'CBL') { return 'CTL'; }
 }
 
-function is_vertically_connected(top, bottom) {
-  return 
-    _.contains(['SQ', 'CTL', 'CTR'], top) &&
-    _.contains(['SQ', 'CBR', 'CTR'], bottom);
+function axis_mirror_curve(c) {
+  if (c == 'CTL') { return 'CBR'; } 
+  else if (c == 'CTR') { return 'CBL'; }
+  else if (c == 'CBR') { return 'CTL'; }
+  else if (c == 'CBL') { return 'CTR'; }
 }
 
 function is_curve(entry) { return _.contains(['CTL', 'CTR', 'CBR', 'CBL'], entry); }
-
+function is_bottom(entry) { return _.contains(['CBR', 'CBL'], entry); }
+function is_top(entry) { return _.contains(['CTR', 'CTL'], entry); }
 
 function make_row({ 
   row_index = this.row_index,
   cols = this.cols,
   plan = this.plan
 }) {
-  var row = createArray(cols);
+  var row = Utils.createArray(cols);
 
   var curves_in_row = 0;
   var starting_curve = null;
@@ -182,8 +84,8 @@ function make_row({
            \CBL CBR/
         */
         if (cells_in_row % 2 == 0) {
-          console.log('appending opposite curve of ' + starting_curve + ': ' + opposite_curve(starting_curve))
-          possibilities.push(opposite_curve(starting_curve))
+          console.log('appending opposite curve of ' + starting_curve + ': ' + axis_mirror_curve(starting_curve))
+          possibilities.push(axis_mirror_curve(starting_curve))
 
         } else {
           console.log('appending mirror curve of ' + starting_curve + ': ' + vertical_mirror_curve(starting_curve))
@@ -194,27 +96,28 @@ function make_row({
       entry = _.sample(possibilities)
     }
 
+    var plan_entry = new ColoringPlanEntry(entry, row_index, col_index);
     if (entry != null) {
       cells_in_row += 1
-      if (curves_in_row == 0 || is_curve(entry)) {
+      if (curves_in_row == 0 || plan_entry.is_curve()) {
         curves_in_row += 1;
       }
-      if (!starting_curve && is_curve(entry)) {
+      if (!starting_curve && plan_entry.is_curve()) {
         starting_curve = entry;
       }
     }
     console.log("adding " + entry + " now have curves in row " + curves_in_row + " starting with " + starting_curve)
-    row[col_index] = entry
+    row[col_index] = plan_entry;
   });
 
   return row;
 }
 
 function make_plan() {
-  var rows = 2;
-  var cols = randInt(2, 5);
+  var rows = 1;
+  var cols = 4 //randInt(2, 5);
 
-  var plan = createArray(rows, cols);
+  var plan = Utils.createArray(rows, cols);
 
   _.times(rows, function(row_index) {
     var make_row_attempts_left = 10;
@@ -225,7 +128,7 @@ function make_plan() {
       new_row = make_row({'cols': cols, 'row_index': row_index, 'plan': plan})
       if (row_index > 0) {
         has_connection = _.find(new_row, function(new_entry, col_index) {
-          return is_vertically_connected(plan[row_index-1][col_index], new_entry)
+          return plan[row_index-1][col_index].is_connected_below(new_entry)
         })
       } else {
         has_connection = true;
@@ -275,63 +178,79 @@ function make_plan() {
 
 function make_coloring_plan(plan) {
   function fill_in_missing_coloring_plan(entry, colors, orientation) {
-    if (!entry) {
+    // debugger;
+    if (!entry) { return false }
+
+    var entry_to_fill = entry.unset_entry()
+    if (!entry_to_fill) { return false }
+
+    if (entry.is_curve() && (entry.orientation != orientation)) {
       return false;
     }
 
-    if (!entry.top) {
-      entry.top = new Object();
-      entry.top.orientation = orientation;
-      entry.top.colors = colors;
-      return true;
-    }
-    if (!entry.bottom && !is_curve(entry.shape)) {
-      entry.bottom = new Object();
-      entry.bottom.orientation = orientation;
-      entry.bottom.colors = colors;
-      return true;
-    }
+    entry_to_fill.set_orientation(orientation);
+    entry_to_fill.set_colors(colors);
 
-    return false;
+    return true;
   }
 
-  var fill_plan = createArray(plan.length, plan[0].length);
-  _.times(plan.length, function(row) {
-    _.times(plan[row].length, function(col) {
-      fill_plan[row][col] = new Object();
-    })
-  })
+  function complete_semicircle(row, col, from_entry) {
+    var put_down_other_half = false;
+    if (plan[row+1] && !is_bottom(from_entry.orientation)) {
+      put_down_other_half |= fill_in_missing_coloring_plan(plan[row+1][col], from_entry.colors, horizontal_mirror_curve(from_entry.orientation))
+    }
+    if (plan[row-1] && !put_down_other_half && !is_top(from_entry.orientation)) {
+      put_down_other_half |= fill_in_missing_coloring_plan(plan[row-1][col], from_entry.colors, horizontal_mirror_curve(from_entry.orientation))
+    }
+    if (!put_down_other_half) {
+      put_down_other_half |= fill_in_missing_coloring_plan(plan[row][col+1], from_entry.colors, vertical_mirror_curve(from_entry.orientation))
+    }
+    if (!put_down_other_half) {
+      put_down_other_half |= fill_in_missing_coloring_plan(plan[row][col-1], from_entry.colors, vertical_mirror_curve(from_entry.orientation))
+    }
+
+  }
 
   // first find all the curved pieces, fill those in, and the ones directly next to them
   _.times(plan.length, function(row) {
     _.times(plan[row].length, function(col) {
-      plan_entry = plan[row][col];
-      entry = fill_plan[row][col];
-      if (is_curve(plan_entry)) {
-        entry.top = new Object();
-        entry.shape = plan_entry
-        entry.top.orientation = plan_entry;
-        entry.top.colors = makeColors();
+      entry = plan[row][col];
+      if (entry.is_curve()) {
+        entry.top.set_orientation(entry.orientation)
+        entry.top.set_colors(Utils.makeColors());
 
-        var put_down_other_half = false;
-        if (fill_plan[row+1]) {
-          put_down_other_half |= fill_in_missing_coloring_plan(fill_plan[row+1][col], entry.top.colors, horizontal_mirror_curve(entry.top.orientation))
-        }
-        if (fill_plan[row-1] && !put_down_other_half) {
-          put_down_other_half |= fill_in_missing_coloring_plan(fill_plan[row-1][col], entry.top.colors, horizontal_mirror_curve(entry.top.orientation))
-        }
-        if (!put_down_other_half) {
-          put_down_other_half |= fill_in_missing_coloring_plan(fill_plan[row][col+1], entry.top.colors, vertical_mirror_curve(entry.top.orientation))
-        }
-        if (!put_down_other_half) {
-          put_down_other_half |= fill_in_missing_coloring_plan(fill_plan[row][col-1], entry.top.colors, vertical_mirror_curve(entry.top.orientation))
-        }
+        complete_semicircle(row, col, entry.top)
       }
     })
   })
 
-  console.log(fill_plan)
-  return fill_plan;
+  // do that again for any square pieces that have partial fills
+
+  _.times(plan.length, function(row) {
+    _.times(plan[row].length, function(col) {
+      var entry = plan[row][col];
+      console.log('looking at entry ' + row + ',' + col)
+      console.log(entry)
+      if (entry.is_partly_full()) {
+        var entry_to_set = entry.top;
+        var entry_to_mirror = entry.bottom;
+        if (entry.top.is_set()) {
+          console.log('top is set, setting bottom')
+          entry_to_set = entry.bottom;
+          entry_to_mirror = entry.top;
+        } else {
+          console.log('bottom is set, setting top')
+        }
+        entry_to_set.set_orientation(axis_mirror_curve(entry_to_mirror.orientation))
+        entry_to_set.set_colors(Utils.makeColors())
+        complete_semicircle(row, col, entry_to_set)
+      }
+    })
+  })
+
+  // need to do that for any empty squares now too
+
+  console.log(plan)
 }
 
 function draw_circles(ctx, colors, radius, band_width, border_size, padding) {
@@ -418,11 +337,11 @@ function reorient(ctx, size, orientation) {
 
 }
 
-function draw_curved_border(ctx, size, border_size, border_color, orientation) {
+function draw_curved_border(ctx, size, border_size, border_color, entry) {
   var inner_line_width = 1
 
   ctx.save()
-  reorient(ctx, size, orientation)
+  reorient(ctx, size, entry.orientation)
   ctx.strokeStyle = border_color;
   ctx.lineWidth = border_size;
 
@@ -461,7 +380,6 @@ function draw_curved_border(ctx, size, border_size, border_color, orientation) {
 
 function render_cell({ 
   ctx = this.ctx,
-  coloring_plan = this.coloring_plan,
   plan = this.plan, 
   row = this.row,
   col = this.col,
@@ -470,11 +388,11 @@ function render_cell({
   border_size = this.border_size,
   arc_border_size = this.arc_border_size
 }) {
-  function draw_coloring_plan_entry(coloring_plan_entry) {
+  function draw_entry(entry) {
     ctx.save()
-    if (coloring_plan_entry) {
-      reorient(ctx, pane_size, coloring_plan_entry.orientation)
-      draw_circles(ctx, coloring_plan_entry.colors, pane_size, arc_size, border_size, arc_border_size)
+    if (entry.is_set()) {
+      reorient(ctx, pane_size, entry.orientation)
+      draw_circles(ctx, entry.colors, pane_size, arc_size, border_size, arc_border_size)
     }
     ctx.restore();
   }
@@ -487,13 +405,12 @@ function render_cell({
   console.log('moving to ' + pane_size*row + ', ' + pane_size*col)
 
   if (entry != null) {
-    coloring_plan_entry = coloring_plan[row][col]
-    if (coloring_plan_entry) {
-      draw_coloring_plan_entry(coloring_plan_entry.top)
-      draw_coloring_plan_entry(coloring_plan_entry.bottom)
+    if (entry.is_set()) {
+      draw_entry(entry.bottom)
+      draw_entry(entry.top)
     }
 
-    if (is_curve(entry)) {
+    if (entry.is_curve()) {
       console.log('drawing curve')
       draw_curved_border(ctx, pane_size, border_size, getRndColor(), entry);
     } else {
@@ -505,6 +422,16 @@ function render_cell({
   ctx.restore()
 }
 
+function make_static_plan(orientations) {
+  var plan = Utils.createArray(orientations.length, orientations[0].length)
+  _.times(orientations.length, function(row) {
+    _.times(orientations[0].length, function(col) {
+      plan[row][col] = new ColoringPlanEntry(orientations[row][col], row, col)
+    })
+  })
+  return plan;
+}
+
 
 function draw_everything({
   canvas = this.canvas,
@@ -514,7 +441,7 @@ function draw_everything({
   // var seed = 100
   // Math.random = Math.seed(seed)
 
-  initColors();
+  // Colors.initColors();
 
   var ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true;
@@ -524,21 +451,22 @@ function draw_everything({
 
   ctx.save()
 
-  var colors1 = makeColors()
-  var colors2 = makeColors()
-
   var canvas_size = canvas.width
   var num_panes_per_row = 5
 
-  var pane_size = canvas_size / num_panes_per_row
+  var pane_size = Math.floor(canvas_size / num_panes_per_row)
 
-  var arc_size = pane_size * 0.10
-  var border_size = pane_size * 0.10
+  var arc_size = Math.floor(pane_size * 0.10)
+  var border_size = Math.floor(pane_size * 0.10)
   var arc_border_size = 1
 
-  var plan = make_plan()
-  // plan = [['CTL', 'SQ', 'SQ', 'CTR']]
-  var coloring_plan = make_coloring_plan(plan)
+  // var plan = make_plan()
+  // var plan = make_static_plan([['CBL', 'SQ', 'SQ', 'CBR']])
+  // var plan = make_static_plan([['CBL', 'SQ', 'CTR']])
+  // var plan = make_static_plan([['CBL', 'SQ', 'SQ', 'SQ', 'CTR']])
+  var plan = make_static_plan([['CBL', 'SQ', 'SQ', 'SQ', 'CTR'], ['CBL', 'SQ', 'SQ', 'SQ', 'CTR']])
+  make_coloring_plan(plan)
+
   var min_x_index = _.min(_.map(plan, function(row) { return _.findIndex(row, function(e) { return e != null }) }))
   var max_x_index = _.max(_.map(plan, function(row) { return _.findLastIndex(row, function(e) { return e != null }) })) + 1
   var max_y_index = _.findLastIndex(plan, function(row) { return _.filter(row, null) != 0 }) + 1
@@ -552,7 +480,6 @@ function draw_everything({
     _.times(plan[row].length, function(col) {
       render_cell({
         ctx: ctx,
-        coloring_plan: coloring_plan,
         plan: plan, 
         row: row, 
         col: col,
