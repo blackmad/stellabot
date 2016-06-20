@@ -5,11 +5,13 @@ http://perfectionkills.com/exploring-canvas-drawing-techniques/#pen-2
 antialiased thick line: http://members.chello.at/~easyfilter/bresenham.html
 */
 
-module.exports = {
-  draw_noisy_shape: draw_noisy_shape,
-  draw_noisy_line: draw_noisy_line,
-  draw_clean_shape: draw_clean_shape
-};
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    draw_noisy_shape: draw_noisy_shape,
+    draw_noisy_line: draw_noisy_line,
+    draw_clean_shape: draw_clean_shape
+  };
+}
 
 var Simple1DNoise = function() {
     var MAX_VERTICES = 256;
