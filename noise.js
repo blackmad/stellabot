@@ -235,18 +235,14 @@ function drawLine(from_x, from_y, to_x, to_y) {
   })
 
   context.stroke();
-
 }
 
+function draw_clean_line(context) {
+  var points = Array.prototype.slice.call(arguments, 1);
 
-function draw_clean_line(context, from_x, from_y, to_x, to_y) {
-  var slope = from_x - to_x / from_y - to_y;
-
-  context.save()
-  context.beginPath();
-  context.strokeStyle="#FF0000";
-  context.moveTo(from_x, from_y);
-  context.lineTo(to_x, to_y);
-  context.stroke();
-  context.restore()
+  draw_clean_shape_helper({
+    context: context,
+    points: points,
+    closed: false
+  })
 }

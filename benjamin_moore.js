@@ -1,13 +1,13 @@
-// TODO
-// fix squares in clean mode
-
 if (typeof module !== 'undefined' && module.exports) {
+  console.log('exports')
   var _ = require('underscore');
   var tinycolor = require("tinycolor2");
   var noise = require("./noise");
   var draw_noisy_shape = noise.draw_noisy_shape;
   var draw_clean_shape = noise.draw_clean_shape;
-  var draw_noisy_line = noise.draw_noisy_line;
+  var draw_clean_line = noise.draw_clean_line;
+  var draw_clean_line = noise.draw_clean_line;
+  var glitch_context = require("./glitch_context");
 
   module.exports = {
     draw_everything: draw_everything,
@@ -132,7 +132,7 @@ function make_corners(ctx, max_x, max_y, line_width, band_width, bg_color, fg_co
   ctx.clip();
   _(num_lines).times(function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
-    draw_noisy_line(ctx,
+    draw_clean_line(ctx,
       [offset(), 0],
       [offset(), max_y - offset()],
       [max_x, max_y - offset()]
@@ -159,7 +159,7 @@ function make_lines(ctx, max_x, max_y, line_width, band_width, bg_color, fg_colo
   ctx.lineWidth = line_width;
   _(num_lines).times(function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
-    draw_noisy_line(ctx, [offset(), 0], [offset(), max_y])
+    draw_clean_line(ctx, [offset(), 0], [offset(), max_y])
   })
 }
 
@@ -168,7 +168,7 @@ function make_slants(ctx, max_x, max_y, line_width, band_width, bg_color, fg_col
   ctx.lineWidth = line_width;
   _(num_lines * 3).times(function(line_index) {
     var offset = calculateOffset(line_index, line_width, band_width)
-    draw_noisy_line(ctx, [offset() - 15, -15], [0 - 15, offset() - 15])
+    draw_clean_line(ctx, [offset() - 15, -15], [0 - 15, offset() - 15])
   })
 }
 
@@ -183,7 +183,7 @@ function make_cross(ctx, max_x, max_y, line_width, band_width, bg_color, fg_colo
     _(num_lines / 2 ).times(function(line_index) {
       line_index = num_lines - line_index
       var offset = calculateOffset(line_index, line_width, band_width)
-      draw_noisy_line(ctx, 
+      draw_clean_line(ctx, 
         [offset(), 0],
         [offset(), max_y - offset()],
         [max_x, max_y - offset()]
@@ -211,8 +211,8 @@ function make_cross(ctx, max_x, max_y, line_width, band_width, bg_color, fg_colo
   draw_quarter();
   ctx.restore()
 
-  draw_noisy_line(ctx, [max_x / 2, 0], [max_x / 2, max_y])
-  draw_noisy_line(ctx, [0, max_y /2], [max_x, max_y / 2])
+  draw_clean_line(ctx, [max_x / 2, 0], [max_x / 2, max_y])
+  draw_clean_line(ctx, [0, max_y /2], [max_x, max_y / 2])
 }
 
 function make_spiral(ctx, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
@@ -226,7 +226,7 @@ function make_spiral(ctx, max_x, max_y, line_width, band_width, bg_color, fg_col
     points.push([max_x - offset(), offset()])
     points.push([offset() + band_width + line_width, offset()])
   })
-  draw_noisy_line(ctx, points)
+  draw_clean_line(ctx, points)
 }
 
 function draw_everything(params) {
@@ -237,14 +237,16 @@ function draw_everything(params) {
   if (Math.random() < 0.6) {
     initColors();
   }
-  if (Math.random() < 0.99) {
-    // draw_noisy_shape = draw_clean_shape
+
+  draw_noisy_shape = draw_clean_shape
+  if (Math.random() < 0.99) {  
     console.log('everything should be clean now')
   }
 
   shouldGlitchAtAll = always_glitch || Math.random() < 0.1;
 
-  var ctx = canvas.getContext('2d');
+  var ctx = new GlitchContext(canvas.getContext('2d'));
+  // var ctx = canvas.getContext('2d');
   ctx.save();
 
   var max_x = canvas.width;
@@ -256,6 +258,7 @@ function draw_everything(params) {
   ctx.fillStyle = '#e0e0e0'
   // ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, max_x, max_y);
+  console.log('fillRect')
 
   // pick number of lines
   var num_lines = randInt(5, 10) * 2;

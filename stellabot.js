@@ -9,8 +9,8 @@ var _ = require('underscore')
 var argv = require('minimist')(process.argv.slice(2));
 console.dir(argv);
 
-var max_x = 506;
-var max_y = 253;
+var max_x = 506*2;
+var max_y = 253*2;
 var canvas = new Canvas(max_x, max_y);
 
 var draw_modules = [
