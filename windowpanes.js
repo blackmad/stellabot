@@ -1,7 +1,12 @@
 /* TODO
- * make the filling in actually work
- * all the borders
- * bring back the inner borders
+- pick colors better
+- leave out the last cirlce on square entries
+- draw colors under that
+- make plan heuristic a little better
+- why can't arc & border ratios be different?
+- just make it a little prettier
+- really fill everything
+- make it so that curve of different halves meet correctly
  */
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -49,6 +54,8 @@ function axis_mirror_curve(c) {
 function is_curve(entry) { return _.contains(['CTL', 'CTR', 'CBR', 'CBL'], entry); }
 function is_bottom(entry) { return _.contains(['CBR', 'CBL'], entry); }
 function is_top(entry) { return _.contains(['CTR', 'CTL'], entry); }
+function is_left(entry) { return entry[2] == 'L' }
+function is_right(entry) { return entry[2] == 'R' }
 
 function make_row({ 
   row_index = this.row_index,
@@ -114,8 +121,8 @@ function make_row({
 }
 
 function make_plan() {
-  var rows = 1;
-  var cols = 4 //randInt(2, 5);
+  var rows = randInt(1, 3)
+  var cols = randInt(2, 5);
 
   var plan = Utils.createArray(rows, cols);
 
@@ -176,6 +183,14 @@ function make_plan() {
   return plan
 }
 
+function is_plan_complete(plan) {
+  _.times(plan.length, function(row) {
+    _.times(plan[row].length, function(col) {
+      if (!plan[row][col].is_full()) { return false }
+    })
+  })
+}
+
 function make_coloring_plan(plan) {
   function fill_in_missing_coloring_plan(entry, colors, orientation) {
     // debugger;
@@ -195,6 +210,8 @@ function make_coloring_plan(plan) {
   }
 
   function complete_semicircle(row, col, from_entry) {
+    if (!from_entry) { return false }
+
     var put_down_other_half = false;
     if (plan[row+1] && !is_bottom(from_entry.orientation)) {
       put_down_other_half |= fill_in_missing_coloring_plan(plan[row+1][col], from_entry.colors, horizontal_mirror_curve(from_entry.orientation))
@@ -202,13 +219,14 @@ function make_coloring_plan(plan) {
     if (plan[row-1] && !put_down_other_half && !is_top(from_entry.orientation)) {
       put_down_other_half |= fill_in_missing_coloring_plan(plan[row-1][col], from_entry.colors, horizontal_mirror_curve(from_entry.orientation))
     }
-    if (!put_down_other_half) {
+    if (!put_down_other_half && (!from_entry.orientation || !is_right(from_entry.orientation))) {
       put_down_other_half |= fill_in_missing_coloring_plan(plan[row][col+1], from_entry.colors, vertical_mirror_curve(from_entry.orientation))
     }
-    if (!put_down_other_half) {
+    if (!put_down_other_half && (!from_entry.orientation || !is_left(from_entry.orientation))) {
       put_down_other_half |= fill_in_missing_coloring_plan(plan[row][col-1], from_entry.colors, vertical_mirror_curve(from_entry.orientation))
     }
 
+    return put_down_other_half;
   }
 
   // first find all the curved pieces, fill those in, and the ones directly next to them
@@ -224,44 +242,97 @@ function make_coloring_plan(plan) {
     })
   })
 
-  // do that again for any square pieces that have partial fills
-
-  _.times(plan.length, function(row) {
-    _.times(plan[row].length, function(col) {
-      var entry = plan[row][col];
-      console.log('looking at entry ' + row + ',' + col)
-      console.log(entry)
-      if (entry.is_partly_full()) {
-        var entry_to_set = entry.top;
-        var entry_to_mirror = entry.bottom;
-        if (entry.top.is_set()) {
-          console.log('top is set, setting bottom')
-          entry_to_set = entry.bottom;
-          entry_to_mirror = entry.top;
-        } else {
-          console.log('bottom is set, setting top')
+  function finish_filling() {
+    // do that again for any square pieces that have partial fills
+    _.times(plan.length, function(row) {
+      _.times(plan[row].length, function(col) {
+        var entry = plan[row][col];
+        console.log('looking at entry ' + row + ',' + col)
+        console.log(entry)
+        if (entry.is_partly_full()) {
+          var entry_to_set = entry.top;
+          var entry_to_mirror = entry.bottom;
+          if (entry.top.is_set()) {
+            console.log('top is set, setting bottom')
+            entry_to_set = entry.bottom;
+            entry_to_mirror = entry.top;
+          } else {
+            console.log('bottom is set, setting top')
+          }
+          entry_to_set.set_orientation(axis_mirror_curve(entry_to_mirror.orientation))
+          entry_to_set.set_colors(Utils.makeColors())
+          complete_semicircle(row, col, entry_to_set)
         }
-        entry_to_set.set_orientation(axis_mirror_curve(entry_to_mirror.orientation))
-        entry_to_set.set_colors(Utils.makeColors())
-        complete_semicircle(row, col, entry_to_set)
-      }
+      })
     })
-  })
 
-  // need to do that for any empty squares now too
+    _.times(plan.length, function(row) {
+      _.times(plan[row].length, function(col) {
+        var entry = plan[row][col];
+        complete_semicircle(row, col, entry.top)
+        complete_semicircle(row, col, entry.bottom)
+      })
+    })
+  }
+
+  function fill_empties() {
+    // do that again for any square pieces that have partial fills
+    _.times(plan.length, function(row) {
+      _.times(plan[row].length, function(col) {
+        var entry = plan[row][col];
+        if (entry.is_empty()) {
+          var entry_to_set = entry.top;
+          console.log('looking at entry ' + row + ',' + col)
+          console.log(entry)
+          entry_to_set.set_orientation(_.sample(['CTL', 'CTR', 'CBR', 'CBL']))
+          entry_to_set.set_colors(Utils.makeColors())
+          complete_semicircle(row, col, entry_to_set)
+        }
+      })
+    })
+  }
+
+  // while(!is_plan_complete(plan)) {
+    finish_filling();
+    fill_empties();
+    finish_filling();
+  // }
+
 
   console.log(plan)
 }
 
-function draw_circles(ctx, colors, radius, band_width, border_size, padding) {
+function draw_circles(ctx, colors, radius, band_width, border_size, padding, infinite) {
   var radiiAndColors = []
   var currentRadius = radius - border_size*1.5
   var currentColorIndex = 0
 
+  console.log('radius: ' + radius)
+  console.log('band width: ' + band_width)
+  console.log('padding: ' + padding)
+  console.log('border size: ' + border_size)
   while (currentRadius > 0) {
     radiiAndColors.push([currentRadius, colors[currentColorIndex % colors.length]])
+    console.log(radiiAndColors)
     currentRadius -= band_width;
     currentColorIndex += 1
+  }
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, radius, radius);
+  ctx.clip()
+
+  if (infinite) {
+    var currentRadius = radius - border_size*1.5 + band_width
+    var currentColorIndex = -1
+    _.times(10, function(i) {
+      if (currentColorIndex < 0) {
+        currentColorIndex += colors.length;
+      }
+      radiiAndColors.unshift([currentRadius, colors[currentColorIndex % colors.length]])
+      currentRadius += band_width;
+      currentColorIndex -= 1
+    })
   }
   // radiiAndColors.reverse()
   console.log(radiiAndColors)
@@ -278,17 +349,18 @@ function draw_circles(ctx, colors, radius, band_width, border_size, padding) {
     ctx.strokeStyle = color;
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, Math.PI / 2);
-    ctx.lineWidth = border_size;
+    ctx.lineWidth = band_width;
     ctx.stroke();
 
-    ctx.strokeStyle = '#ffffff'
-    ctx.lineWidth = padding;
-    ctx.beginPath();
-    ctx.arc(0, 0, radius + border_size/2, 0, Math.PI / 2);
-    ctx.stroke();
+    // ctx.strokeStyle = '#ffffff'
+    // ctx.lineWidth = padding;
+    // ctx.beginPath();
+    // ctx.arc(0, 0, radius - band_width/2, 0, Math.PI / 2);
+    // ctx.stroke();
 
     radius -= band_width
   })
+  ctx.restore();
 }
 
 function draw_square_border(ctx, size, border_size, color) {
@@ -388,11 +460,12 @@ function render_cell({
   border_size = this.border_size,
   arc_border_size = this.arc_border_size
 }) {
-  function draw_entry(entry) {
+  console.log('pange size: ' + pane_size)
+  function draw_entry(entry, infinite) {
     ctx.save()
     if (entry.is_set()) {
       reorient(ctx, pane_size, entry.orientation)
-      draw_circles(ctx, entry.colors, pane_size, arc_size, border_size, arc_border_size)
+      draw_circles(ctx, entry.colors, pane_size, arc_size, border_size, arc_border_size, infinite)
     }
     ctx.restore();
   }
@@ -406,8 +479,15 @@ function render_cell({
 
   if (entry != null) {
     if (entry.is_set()) {
-      draw_entry(entry.bottom)
-      draw_entry(entry.top)
+      var first = entry.bottom
+      var second = entry.top
+      if (Math.random() < 0.5) {
+        first = entry.top
+        second = entry.bottom
+      }
+
+      draw_entry(first, true && entry.is_square())
+      draw_entry(second, false)
     }
 
     if (entry.is_curve()) {
@@ -456,15 +536,20 @@ function draw_everything({
 
   var pane_size = Math.floor(canvas_size / num_panes_per_row)
 
-  var arc_size = Math.floor(pane_size * 0.10)
-  var border_size = Math.floor(pane_size * 0.10)
+  var arc_ratio = 0.10
+  var border_ratio = arc_ratio
+  // var arc_size = Math.floor(pane_size * arc_ratio)
+  
+  var border_size = Math.floor(pane_size * border_ratio)
+  var arc_size = Math.floor((pane_size - 2*(border_size+1)) / 4)
+
   var arc_border_size = 1
 
-  // var plan = make_plan()
+  var plan = make_plan()
   // var plan = make_static_plan([['CBL', 'SQ', 'SQ', 'CBR']])
   // var plan = make_static_plan([['CBL', 'SQ', 'CTR']])
   // var plan = make_static_plan([['CBL', 'SQ', 'SQ', 'SQ', 'CTR']])
-  var plan = make_static_plan([['CBL', 'SQ', 'SQ', 'SQ', 'CTR'], ['CBL', 'SQ', 'SQ', 'SQ', 'CTR']])
+  // var plan = make_static_plan([['CBL', 'SQ', 'SQ', 'SQ', 'CTR'], ['CBL', 'SQ', 'SQ', 'SQ', 'CTR']])
   make_coloring_plan(plan)
 
   var min_x_index = _.min(_.map(plan, function(row) { return _.findIndex(row, function(e) { return e != null }) }))

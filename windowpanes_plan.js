@@ -37,6 +37,16 @@ function ColoringPlanEntry(orientation, row, col) {
     return null;
   }
 
+   this.set_entry = function() {
+    if (this.top.is_set()) {
+      return this.top;
+    } 
+    if (this.bottom.is_set()) {
+      return this.bottom;
+    } 
+    return null;
+  }
+
   this.is_full = function() {
     return !this.is_curve() && (
       !this.top.is_set() || !this.bottom.is_set()
@@ -44,7 +54,7 @@ function ColoringPlanEntry(orientation, row, col) {
   }
 
   this.is_empty = function() {
-    return this.top.is_set() && this.bottom.is_set();
+    return !this.top.is_set() && !this.bottom.is_set();
   }
 
   this.is_partly_full = function() {
@@ -65,5 +75,9 @@ function ColoringPlanEntry(orientation, row, col) {
 
   this.is_curve = function() {
     return _.contains(['CTL', 'CTR', 'CBR', 'CBL'], this.orientation);
+  }
+
+  this.is_square = function() {
+    return this.orientation == 'SQ';
   }
 }
