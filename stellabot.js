@@ -20,7 +20,7 @@ var draw_modules = [
 
 var draw_module = _.sample(draw_modules);
 draw_module.draw_everything({
-  canvas: canvas, 
+  canvas: canvas,
   alwaysGlitch: argv['glitch'] || false
 });
 
