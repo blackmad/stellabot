@@ -1,9 +1,3 @@
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    GlitchContext: GlitchContext
-  };
-}
-
 class GlitchContext {
   constructor(context) {
     this.generator = new Simple1DNoise();
@@ -146,4 +140,10 @@ class GlitchContext {
     this.context.fillRect.apply(this.context, arguments)
     // this.context.fillRect(this.m(x),this.m(y),w,h)
   }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    GlitchContext: GlitchContext
+  };
 }
