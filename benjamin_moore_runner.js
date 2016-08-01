@@ -11,7 +11,6 @@ var tempfs = require('temp-fs');
 
 var BenjaminMoore = require('./benjamin_moore').BenjaminMoore;
 var EasingFunctions = require('./easings').EasingFunctions
-var EventEmitter = require('events');
 var util = require('util');
 var fs = require('fs');
 
@@ -21,7 +20,6 @@ var easingFunction = EasingFunctions[_.sample(Object.keys(EasingFunctions))]
 
 var times = 70;
 
-var exitLock = new EventEmitter();
 
 function pad(n, width, z) {
   z = z || '0';
@@ -46,13 +44,11 @@ var prefix = 'benjamin_moore'
 
 function do_iteration(dirPath, iteration, doneCallback) {
   Math.random = Math.seed(originalTime);
-  if (iteration >= times) {
+  if (iteration > times) {
     console.log('done with all framess')
     doneCallback();
-    exitLock.emit('done');
     return;
   }
-  console.log(iteration);
   var percentage = (iteration*1.0)/times;
   console.log('percentage: ' + percentage);
 
@@ -68,25 +64,32 @@ function do_iteration(dirPath, iteration, doneCallback) {
     out.write(chunk);
   });
   stream.on('end', function () {
-    console.log('end');
     out.end();
   })
   out.on('finish', function () {
-    console.log('finished');
     do_iteration(dirPath, iteration + 1, doneCallback);
   })
 
 }
 
-var dirPath = tempfs.mkdirSync().path
-console.log(dirPath)
-do_iteration(dirPath, 0, function() {
-  execSync('ls -l ' + dirPath + '/*png ', {stdio:[0,1,2]});
-  var cmd = 'convert ' + dirPath + '/*png -duplicate 1,-2-1 -coalesce ' + prefix + '.gif'
-  console.log(cmd)
-  execSync(cmd)
-  if (argv['o']) {
-    execSync('open -a "Google Chrome" ' + prefix + '.gif');
-  }
-});
+if (argv['animate']) {
+  var dirPath = tempfs.mkdirSync().path
+  console.log(dirPath)
+  do_iteration(dirPath, 0, function() {
+    execSync('ls -l ' + dirPath + '/*png ', {stdio:[0,1,2]});
+    var cmd = 'convert ' + dirPath + '/*png -duplicate 1,-2-1 -coalesce ' + prefix + '.gif'
+    console.log(cmd)
+    execSync(cmd)
+    if (argv['o']) {
+      execSync('open -a "Google Chrome" ' + prefix + '.gif');
+    }
+  });
+} else {
+  times = 1
+  do_iteration('.', 1, function() {
+    if (argv['o']) {
+      execSync('open -a "Google Chrome" ' + prefix + '*.png');
+    }
+  });
+}
 

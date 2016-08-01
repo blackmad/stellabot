@@ -24,7 +24,8 @@ class ShapeUtil {
     var points = Array.prototype.slice.call(arguments, 1);
     this.draw_noisy_shape_helper({
       points: points,
-      closed: true
+      closed: true,
+      percentage: this.percentage
     })
   }
 
@@ -32,7 +33,8 @@ class ShapeUtil {
     var points = Array.prototype.slice.call(arguments, 1);
     this.draw_noisy_shape_helper({
       points: points,
-      closed: false
+      closed: false,
+      percentage: this.percentage
     })
   }
 
@@ -40,7 +42,6 @@ class ShapeUtil {
     var context = this.context;
     var points = params.points;
     var closed = params.closed;
-
 
     // if was passed like f(x, [p0, p1], [p2, p3])
     // then points will be an array of arrays
@@ -69,21 +70,28 @@ class ShapeUtil {
 
   draw_clean_shape() {
     var points = Array.prototype.slice.call(arguments, 1);
-    this.draw_noisy_shape_helper({
+    this.draw_clean_shape_helper({
       points: points,
-      closed: true
+      closed: true,
+      percentage: this.percentage
     })
   }
 
-  draw_percentage_shape_helper(line_cb, params) {
-    var context = this.context;
-    var points = params.points;
-    var closed = params.closed;
+  distance(p1, p2) {
+    var x1 = p1[0]
+    var y1 = p1[1]
+    var x2 = p2[0]
+    var y2 = p2[1]
 
-    if (Array.isArray(points[0]) && Array.isArray(points[0][0])) {
-      points = points[0]
-    }
+    var d = Math.sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) );
+    return d;
+  }
 
+  sum_array(array) {
+    return _.reduce(array, function(a, b) { return a + b}, 0)
+  }
+
+  total_distance(points) {
     function sliding(array, window) {
       var i, length = array.length, iterations = length - window, accum = [];
       if(iterations < 1) return [array.slice(0, window)];
@@ -92,29 +100,32 @@ class ShapeUtil {
       return accum;
     }
 
-    function distance(p1, p2) {
-      var x1 = p1[0]
-      var y1 = p1[1]
-      var x2 = p2[0]
-      var y2 = p2[1]
-
-      var d = Math.sqrt( (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) );
-      return d;
-    }
-
     var distances = _.map(sliding(points, 2), function(points, index) {
       var p1 = points[0]
       var p2 = points[1]
       // console.log('distance from ' + p1 + ' to ' + p2)
-      return distance(p1, p2)
-    })
+      return this.distance(p1, p2)
+    }, this);
 
-    var totalDistance = _.reduce(distances, function(a, b) { return a + b}, 0)
+    var totalDistance = this.sum_array(distances);
+    return totalDistance;
+  }
+
+  draw_percentage_shape_helper(line_cb, params) {
+    var context = this.context;
+    var points = params.points;
+    var closed = params.closed;
+    var percentage = params.percentage;
+
+    if (Array.isArray(points[0]) && Array.isArray(points[0][0])) {
+      points = points[0]
+    }
+    var totalDistance = this.total_distance(points);
 
     var firstPoint = points[0]
     var restPoints = Array.prototype.slice.call(points, 1);
 
-    var distanceToHit = totalDistance * this.percentage;
+    var distanceToHit = totalDistance * percentage;
     var distanceSoFar = 0
     context.moveTo(firstPoint[0], firstPoint[1])
     var lastPoint = firstPoint;
@@ -125,10 +136,10 @@ class ShapeUtil {
       // console.log('distance to lastPoint ' + distance(lastPoint, point))
       // console.log('distanceSoFar: ' + distanceSoFar);
 
-      if (distance(lastPoint, point) + distanceSoFar > distanceToHit) {
+      if (this.distance(lastPoint, point) + distanceSoFar > distanceToHit) {
         var distanceForMe = distanceToHit - distanceSoFar;
         // console.log('distanceForMe: ' + distanceForMe)
-        var percentageForMe = distanceForMe / distance(lastPoint, point)
+        var percentageForMe = distanceForMe / this.distance(lastPoint, point)
         // console.log('percentageForMe: ' + percentageForMe)
         var newX = lastPoint[0] + ((point[0] - lastPoint[0]) * percentageForMe)
         var newY = lastPoint[1] + ((point[1] - lastPoint[1]) * percentageForMe)
@@ -138,7 +149,7 @@ class ShapeUtil {
         break;
       } else {
         // console.log('draw full line')
-        distanceSoFar += distance(lastPoint, point);
+        distanceSoFar += this.distance(lastPoint, point);
         line_cb(lastPoint[0], lastPoint[1], point[0], point[1])
       }
       lastPoint = point;
@@ -266,8 +277,52 @@ class ShapeUtil {
 
     this.draw_clean_shape_helper({
       points: points,
-      closed: false
+      closed: false,
+      percentage: this.percentage
     })
+  }
+
+  draw_lines(ctx, lines) {
+    var lineFunc = null;
+
+    if (this.noisy) {
+      lineFunc = _.bind(this.draw_noisy_shape_helper, this)
+    } else {
+      lineFunc = _.bind(this.draw_clean_shape_helper, this)
+    }
+
+    var totalDistance = this.sum_array(
+      _.map(lines, function(points) {return this.total_distance(points) }, this)
+    )
+
+    // console.log('totalDistance: ' + totalDistance)
+
+    var distanceToHit = totalDistance * this.percentage;
+    var distanceSoFar = 0
+    
+    for (var i = 0; i < lines.length; i++) {
+      // console.log('line: ' + i)
+      var line = lines[i];
+      var lineDistance = this.total_distance(line);
+
+      var percentageForMe = 1.0;
+      if (distanceSoFar > distanceToHit) {
+        break;
+      }
+      
+      if (distanceSoFar + lineDistance > distanceToHit) {
+        var distanceForMe = distanceToHit - distanceSoFar;
+        // console.log('distanceForMe: ' + distanceForMe)
+        percentageForMe = distanceForMe / lineDistance;
+      }
+      distanceSoFar += lineDistance;
+      // console.log('percentageForMe: ' + percentageForMe)
+      lineFunc({
+        points: line,
+        closed: false,
+        percentage: percentageForMe
+      })
+    }
   }
 
   draw_line() {

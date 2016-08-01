@@ -16,20 +16,8 @@ http://blackmad.github.io/stellabot/benjamin_moore.html
 http://blackmad.github.io/stellabot/jaspers_dilemma.html
 
 ## TODO
-
-### Benjamin Moore Series
-- pick attractive color ordering
-- use the twitter image size ratio better
-
-### Jasper's Dilemma
-- pick attractive color ordering
-- randomize line size / ratios
-
-### Windowpanes / Protractors
-- draw the last band in the arc half & half
-- figure out how to do multi-row with up-down circles
-- make the final band look like it's mostly the right size
-- still, with the colors
-
-## general
-- redo color pickers http://devmag.org.za/2012/07/29/how-to-choose-colours-procedurally-algorithms/
+- implement drawing one line at a time
+- bring jasper's up to current code standards
+- make twitterbot work
+- implement pen lines via different line widths
+- finish windowpanes

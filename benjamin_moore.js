@@ -1,8 +1,3 @@
-// TODO
-// why is the noise changing when the segment completes?
-// why is the random spinning not getting patched correctly?
-// make the squares close
-
 if (typeof module !== 'undefined' && module.exports) {
   console.log('exports')
   var _ = require('underscore');
@@ -237,22 +232,25 @@ class BenjaminMoore {
 
   make_lines(ctx, shape_util, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
     var that = this;
-    // console.log('lines args ' + Array.from(arguments))  
+
     ctx.lineWidth = line_width;
-    _(num_lines).times(function(line_index) {
+
+    var lines = _(num_lines).times(function(line_index) {
       var offset = that.calculateOffset(line_index, line_width, band_width)
-      shape_util.draw_line(ctx, [offset(), 0], [offset(), max_y])
+      return [[offset(), 0], [offset(), max_y]]
     })
+    shape_util.draw_lines(ctx, lines)
   }
 
   make_slants(ctx, shape_util, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
     var that = this;
     ctx.antialias = 'default';
     ctx.lineWidth = line_width;
-    _(num_lines * 3).times(function(line_index) {
+    var lines = _(num_lines * 3).times(function(line_index) {
       var offset = that.calculateOffset(line_index, line_width, band_width)
-      shape_util.draw_line(ctx, [offset() - 15, -15], [0 - 15, offset() - 15])
+      return [[offset() - 15, -15], [0 - 15, offset() - 15]]
     })
+    shape_util.draw_lines(ctx, lines)
   }
 
   make_cross(ctx, shape_util, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
@@ -263,40 +261,54 @@ class BenjaminMoore {
     var band_width = line_width * band_to_line_width_multiplier
 
     ctx.lineWidth = line_width;
-    function draw_quarter() {
-      _(num_lines / 2 ).times(function(line_index) {
-        line_index = num_lines - line_index
-        var offset = that.calculateOffset(line_index, line_width, band_width)
-        shape_util.draw_line(ctx, 
-          [offset(), 0],
+    function draw_quarters() {
+      function upper_right(offset) {
+        return [[offset(), 0],
           [offset(), max_y - offset()],
-          [max_x, max_y - offset()]
-        )
+          [max_x, max_y - offset()]]
+      }
+
+      function lower_left(offset) {
+        return [[0, offset()],
+          [max_x - offset(), offset()],
+          [max_x - offset(), max_y]]
+      }
+
+      function upper_left(offset) {
+        return [[0, max_y - offset()],
+          [max_x - offset(), max_y - offset()],
+          [max_x - offset(), 0]]
+      }
+
+      function lower_right(offset) {
+        return [[offset(), max_y],
+          [offset(), offset()],
+          [max_x, offset()]]
+      }
+
+      var funcs = [upper_left, upper_right, lower_right, lower_left]
+
+      function make_corner(cb) {
+        return _(num_lines / 2 ).times(function(line_index) {
+          line_index = num_lines - line_index
+          var offset = that.calculateOffset(line_index, line_width, band_width)
+          return cb(offset)
+        })
+      }
+
+      var lines = []
+      _.each(funcs, function(cb) {
+        lines = lines.concat(make_corner(cb))
       })
+      return lines;
     }
 
-    draw_quarter();
+    var lines = draw_quarters()
 
-    ctx.save()
-    ctx.rotate(Math.PI / 2)
-    ctx.translate(0, -max_y)
-    draw_quarter();
-    ctx.restore()
+    lines.push([[max_x / 2, 0], [max_x / 2, max_y]])
+    lines.push([[0, max_y /2], [max_x, max_y / 2]])
 
-    ctx.save()
-    ctx.rotate(Math.PI)
-    ctx.translate(-max_x, -max_y)
-    draw_quarter();
-    ctx.restore()
-
-    ctx.save()
-    ctx.rotate(Math.PI * 1.5)
-    ctx.translate(-max_x, 0)
-    draw_quarter();
-    ctx.restore()
-
-    shape_util.draw_line(ctx, [max_x / 2, 0], [max_x / 2, max_y])
-    shape_util.draw_line(ctx, [0, max_y /2], [max_x, max_y / 2])
+    shape_util.draw_lines(ctx, lines)
   }
 
   make_spiral(ctx, shape_util, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
