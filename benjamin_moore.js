@@ -56,10 +56,10 @@ class BenjaminMoore {
     //   console.log('everything should be clean now')
     // }
 
-    this.shouldGlitchAtAll = always_glitch || Math.random() < 0.1;
+    this.shouldGlitchAtAll = always_glitch;
 
-    // var ctx = new GlitchContext(canvas.getContext('2d'));
-    var ctx = canvas.getContext('2d');
+    var ctx = new glitch_context.GlitchContext(canvas.getContext('2d'));
+    // var ctx = canvas.getContext('2d');
     this.ctx = ctx;
     ctx.save();
 
@@ -84,8 +84,9 @@ class BenjaminMoore {
 
     this.cols = randInt(2, max_cols)
     this.rows = Math.max(1, Math.floor(this.cols * (max_y / max_x) * (randInt(60, 100)/100)))
+    if (params['rows']) { this.rows = parseInt(params['rows'])}
+    if (params['cols']) { this.cols = parseInt(params['cols'])}
 
-    // this.cols = this.rows = 1
 
     var total_squares = this.cols * this.rows
 
@@ -176,10 +177,10 @@ class BenjaminMoore {
     var band_width = line_width * band_to_line_width_multiplier
 
     ctx.save();
-    ctx.beginPath()
-    ctx.rect(0, 0, max_x, max_y);
-    ctx.stroke();
-    ctx.clip();
+    // ctx.beginPath()
+    // ctx.rect(0, 0, max_x, max_y);
+    // ctx.stroke();
+    // ctx.clip();
     _.bind(draw_cb, this, ctx, shape_util, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines)();
     ctx.restore();
   }
@@ -203,7 +204,7 @@ class BenjaminMoore {
   make_corners(ctx, shape_util, max_x, max_y, line_width, band_width, bg_color, fg_color, num_lines) {
     var that = this;
     ctx.lineWidth = line_width;
-    ctx.clip();
+    // ctx.clip();
     _(num_lines).times(function(line_index) {
       var offset = that.calculateOffset(line_index, line_width, band_width)
       shape_util.draw_line(ctx,
@@ -234,7 +235,6 @@ class BenjaminMoore {
     var that = this;
 
     ctx.lineWidth = line_width;
-
     var lines = _(num_lines).times(function(line_index) {
       var offset = that.calculateOffset(line_index, line_width, band_width)
       return [[offset(), 0], [offset(), max_y]]
@@ -246,10 +246,18 @@ class BenjaminMoore {
     var that = this;
     ctx.antialias = 'default';
     ctx.lineWidth = line_width;
-    var lines = _(num_lines * 3).times(function(line_index) {
+    var lines = _(num_lines).times(function(line_index) {
       var offset = that.calculateOffset(line_index, line_width, band_width)
-      return [[offset() - 15, -15], [0 - 15, offset() - 15]]
+      return [[offset(), 0], [0, offset()]]
     })
+
+    lines = lines.concat([[[0, max_y], [max_x, 0]]])
+
+    lines = lines.concat(_(num_lines).times(function(line_index) {
+      var offset = that.calculateOffset(line_index, line_width, band_width)
+      return [[offset(), max_y], [max_x, offset()]]
+    }))
+
     shape_util.draw_lines(ctx, lines)
   }
 
@@ -334,6 +342,7 @@ class BenjaminMoore {
     ctx.save()
 
     var noisy = true;
+    noisy = false;
     var shape_util = new ShapeUtil(this.ctx, percentage, noisy)
     // console.log(this)
 

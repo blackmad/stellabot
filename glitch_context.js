@@ -1,3 +1,9 @@
+if (typeof module !== 'undefined' && module.exports) {
+  console.log('exports')
+  var _ = require('underscore');
+  var Simple1DNoise = require('./noise').Simple1DNoise;
+}
+
 class GlitchContext {
   constructor(context) {
     this.generator = new Simple1DNoise();
@@ -72,11 +78,17 @@ class GlitchContext {
   moveTo(x, y) {
     this.passthru()
     this.saveCall(this.context.moveTo, arguments)
-    x = this.m(x)
-    y = this.m(y);
+    // x = this.m(x)
+    // y = this.m(y);
     this.context.moveTo(x, y)
     this.lastPoint = [x, y]
   } 
+
+  veryClose(p1, p2) {
+    return 
+      Math.abs(p1[0] - p2[0]) < 0.00001 &&
+        Math.abs(p1[1] - p2[1]) < 0.00001
+  }
 
   lineTo(x, y) {
     this.passthru()
@@ -104,24 +116,26 @@ class GlitchContext {
 
       var originalWidth = this.context.lineWidth;
 
-      _.times(numPoints, _.bind(function() {
-        var distance = 1
-        var distanceX = ((endX-startX)/numPoints)*distance
-        var distanceY = ((endY-startY)/numPoints)*distance
+      _.times(numPoints, _.bind(function(i) {
+        var percentage = (i+1) * (numPoints*1.0 / 100)
+        var curX = startX + ((endX-startX)/numPoints)*percentage
+        var curY = startY + ((endY-startY)/numPoints)*percentage
 
-        startX += distanceX
-        startY += distanceY
+        // console.log('lastPoint: ' + this.lastPoint)
+        // console.log('percentage: ' + percentage)
+        // console.log('cur point: ' + [curX, curY])
+        // console.log('driving towards: ' + [endX, endY])
 
         // console.log(startX + ',' + startY)
-        this.context.lineWidth = this.generator.getVal(startX)*0.5+1;
-        this.context.lineTo(startX, startY)
-        this.context.stroke();
-        this.context.beginPath();
-        this.context.moveTo(startX, startY)
+        this.context.lineWidth = this.generator.getVal(curX*curY)*0.5+1;
+        this.context.lineTo(curX, curY)
+        this.context.stroke()
+        this.context.beginPath()
+        this.context.moveTo(curX, curY)
+
       }, this))
 
-      // this.context.lineTo(x, y)
-
+      this.context.lineTo(x, y)
     } else {
       this.context.lineTo(x, y)
     }
@@ -146,4 +160,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     GlitchContext: GlitchContext
   };
+} else {
+  var glitch_context = {
+    GlitchContext: GlitchContext
+  }
 }

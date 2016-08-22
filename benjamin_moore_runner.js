@@ -16,10 +16,10 @@ var fs = require('fs');
 
 var argv = require('minimist')(process.argv.slice(2));
 
-var easingFunction = EasingFunctions[_.sample(Object.keys(EasingFunctions))]
+// var easingFunction = EasingFunctions[_.sample(Object.keys(EasingFunctions))]
+var easingFunction = EasingFunctions['linear']
 
-var times = 70;
-
+var times = 20;
 
 function pad(n, width, z) {
   z = z || '0';
@@ -35,29 +35,40 @@ Math.seed = function(s) {
 var originalTime = new Date().getTime();
 
 var canvas = new Canvas(max_x, max_y);
-var benjamin_moore = new BenjaminMoore({
+
+var params = {
   canvas: canvas,
-  // always_glitch: true
-})
+}
+
+if (argv['1']) {
+  params['rows'] = 1
+  params['cols'] = 1
+}
+if (argv['glitch'] || argv['g']) {
+  params['always_glitch'] = true
+}
+
+var benjamin_moore = new BenjaminMoore(params)
 
 var prefix = 'benjamin_moore'
 
 function do_iteration(dirPath, iteration, doneCallback) {
+  var output_file = dirPath + '/' + prefix + '_' + pad(iteration, 4) + '.png';
   Math.random = Math.seed(originalTime);
-  if (iteration > times) {
-    console.log('done with all framess')
-    doneCallback();
-    return;
-  }
+
   var percentage = (iteration*1.0)/times;
   console.log('percentage: ' + percentage);
 
-  benjamin_moore.draw_everything({
+  var params = {
     percentage: easingFunction(percentage)
-  });
+  }
 
-  var out = fs.createWriteStream(dirPath + '/' + prefix + '_' + pad(iteration, 4) + '.png')
-    , stream = canvas.createPNGStream();
+  console.log(params)
+
+  benjamin_moore.draw_everything(params);
+
+  var out = fs.createWriteStream(output_file);
+  var stream = canvas.createPNGStream();
 
   stream.on('data', function(chunk){
     // console.log('data')
@@ -67,29 +78,44 @@ function do_iteration(dirPath, iteration, doneCallback) {
     out.end();
   })
   out.on('finish', function () {
-    do_iteration(dirPath, iteration + 1, doneCallback);
+    if (iteration == times) {
+      console.log('done with all framess')
+      doneCallback(output_file)
+    } else {
+      do_iteration(dirPath, iteration + 1, doneCallback);
+    }
   })
+}
+
+function do_render(opts, callback) {
+  var should_animate = opts['animate'];
+
+  if (should_animate) {
+      var dirPath = tempfs.mkdirSync().path
+      console.log(dirPath)
+      do_iteration(dirPath, 0, function() {
+        var output_file = prefix + '.gif'
+        execSync('ls -l ' + dirPath + '/*png ', {stdio:[0,1,2]});
+        var cmd = 'convert ' + dirPath + '/*png -duplicate 1,-2-1 -coalesce ' + output_file
+        console.log(cmd)
+        execSync(cmd)
+        callback(output_file)
+      });
+    } else {
+      times = 1
+      do_iteration('.', 1, function(output_file) {
+        callback(output_file)
+      });
+    }
 
 }
 
-if (argv['animate']) {
-  var dirPath = tempfs.mkdirSync().path
-  console.log(dirPath)
-  do_iteration(dirPath, 0, function() {
-    execSync('ls -l ' + dirPath + '/*png ', {stdio:[0,1,2]});
-    var cmd = 'convert ' + dirPath + '/*png -duplicate 1,-2-1 -coalesce ' + prefix + '.gif'
-    console.log(cmd)
-    execSync(cmd)
-    if (argv['o']) {
-      execSync('open -a "Google Chrome" ' + prefix + '.gif');
-    }
-  });
-} else {
-  times = 1
-  do_iteration('.', 1, function() {
-    if (argv['o']) {
-      execSync('open -a "Google Chrome" ' + prefix + '*.png');
-    }
-  });
-}
+var should_animate = argv['animate'] || argv['a'];
+do_render({
+  animate: should_animate,
+}, function(output_file) {
+  if (argv['o']) {
+    execSync('open -a "Google Chrome" ' + output_file);
+  }
+});
 

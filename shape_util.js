@@ -52,10 +52,10 @@ class ShapeUtil {
       points = points[0]
     }
 
-    var origLineWidth = context.lineWidth
-    context.lineWidth = origLineWidth*0.9;
-    this.draw_clean_shape_helper(params)
-    context.lineWidth = origLineWidth
+    // var origLineWidth = context.lineWidth
+    // context.lineWidth = origLineWidth*0.9;
+    // this.draw_clean_shape_helper(params)
+    // context.lineWidth = origLineWidth
 
     var generator = new Simple1DNoise(points[0][0]);
 
@@ -168,17 +168,11 @@ class ShapeUtil {
     }
     this.draw_percentage_shape_helper(line_cb, params)
 
-    context.stroke();
-
-    // closed shape, need to overdraw for dumb reasons
-    // TODO: bring this back
-    if (closed) {
-      // console.log('we should overdraw')
-      // points.forEach(function(point) {
-      //   context.lineTo(point[0], point[1])
-      // });
-      // context.stroke()
+    if (closed && this.percentage >= 1.0) {
+      context.closePath()
     }
+
+    // context.stroke();
   }
 
   draw_noisy_line_helper(generator, x0, y0, x1, y1) {
@@ -243,35 +237,6 @@ class ShapeUtil {
     }
   }
 
-  // drawLine(from_x, from_y, to_x, to_y) {
-  //   var slope = from_x - to_x / from_y - to_y;
-
-  //   context.save()
-  //   context.beginPath();
-  //   context.strokeStyle="#FF0000";
-  //   context.moveTo(from_x, from_y);
-  //   context.lineTo(to_x, to_y);
-  //   // context.stroke();
-  //   context.restore()
-
-  //   context.strokeStyle="#000000";
-
-  //   context.beginPath();
-  //   context.moveTo(from_x, from_y)
-
-  //   var distance = 0.0
-  //   _.times(1000, function(x) {
-  //     var distance = x / Math.abs(Math.floor(from_x - to_x))
-  //     var x_offset = (distance * (to_x - from_x)) + from_x
-  //     var y_offset = (distance * (to_y - from_y)) + from_y
-  //     var x_jitter = 0  // (Math.random() * 10) - 5
-  //     var y_jitter = generator.getVal(x) - 0.5
-  //     context.lineTo(x_offset , y_offset + y_jitter)
-  //   })
-
-  //   context.stroke();
-  // }
-
   draw_clean_line() {
     var points = Array.prototype.slice.call(arguments, 1);
 
@@ -309,7 +274,7 @@ class ShapeUtil {
       if (distanceSoFar > distanceToHit) {
         break;
       }
-      
+
       if (distanceSoFar + lineDistance > distanceToHit) {
         var distanceForMe = distanceToHit - distanceSoFar;
         // console.log('distanceForMe: ' + distanceForMe)

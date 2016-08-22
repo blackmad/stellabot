@@ -16,7 +16,10 @@ http://blackmad.github.io/stellabot/benjamin_moore.html
 http://blackmad.github.io/stellabot/jaspers_dilemma.html
 
 ## TODO
+- make web viewer work again
 - implement drawing one line at a time
+- what's with the tails with glitch context
+- are the squares closing?
 - bring jasper's up to current code standards
 - make twitterbot work
 - implement pen lines via different line widths
