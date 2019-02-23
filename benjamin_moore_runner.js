@@ -1,10 +1,10 @@
-var Canvas = require('canvas');
-
 var fs = require('fs');
 
 var max_x = 1024;
 var max_y = 512;
-var canvas = new Canvas(max_x, max_y);
+
+const { createCanvas, loadImage } = require('canvas')
+const canvas = createCanvas(200, 200)
 
 var benjamin_moore = require('./benjamin_moore');
 benjamin_moore.draw_everything(canvas);

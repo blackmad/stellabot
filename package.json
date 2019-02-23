@@ -1,17 +1,16 @@
 {
   "name": "node-lewitt-bots",
   "main": "bot.js",
-  "dependencies" : {
-    "canvas" : "latest",
-    "twit" : "latest",
-    "underscore" : "latest",
-    "shuffle-array" : "latest",
-    "minimist": "latest",
-    "tinycolor2": "latest",
+  "dependencies": {
+    "canvas": "^2.3.1",
     "fabric": "latest",
-    "falafel" : "latest",
-    "tmp" : "latest",
-    "random-weighted-choice" : "latest",
-    "shuffle-array": "latest"
+    "falafel": "latest",
+    "minimist": "latest",
+    "random-weighted-choice": "latest",
+    "shuffle-array": "latest",
+    "tinycolor2": "latest",
+    "tmp": "latest",
+    "twit": "latest",
+    "underscore": "latest"
   }
 }
